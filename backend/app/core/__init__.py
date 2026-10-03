@@ -1,0 +1,1 @@
+"""Konfigurasi dan konstanta aplikasi."""

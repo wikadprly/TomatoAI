@@ -1,0 +1,1 @@
+"""Route yang didaftarkan di `app/main.py`."""

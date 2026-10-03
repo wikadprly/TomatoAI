@@ -1,0 +1,10 @@
+# Dependensi machine learning (Tim 2).
+# Dipisah dari requirements.txt karena TensorFlow besar sekali (~600 MB).
+#
+# Cara pakai:
+#   pip install -r requirements.txt
+#   pip install -r requirements-ml.txt
+
+tensorflow==2.18.0
+scikit-learn==1.6.0
+matplotlib==3.10.0

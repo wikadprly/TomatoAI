@@ -1,0 +1,1 @@
+"""Lapisan bisnis:/image processing (Tim 1) dan MobileNetV2 (Tim 2)."""

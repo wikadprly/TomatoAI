@@ -16,8 +16,9 @@ class Settings:
     API_PREFIX: str = "/api/v1"
 
     # --- Model MobileNetV2 (Tim 2) ---
+    # Format .keras: format native Keras 3 (TensorFlow 2.18).
     MODEL_PATH: Path = Path(
-        os.getenv("MODEL_PATH") or BASE_DIR / "models" / "mobilenetv2_tomat.h5"
+        os.getenv("MODEL_PATH") or BASE_DIR / "models" / "mobilenetv2_tomat.keras"
     )
     IMAGE_SIZE: int = int(os.getenv("IMAGE_SIZE", "224"))
 

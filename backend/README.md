@@ -28,7 +28,7 @@ juga diisi lewat environment variable tanpa file `.env`.
 
 | Variabel | Default | Keterangan |
 | --- | --- | --- |
-| `MODEL_PATH` | `models/mobilenetv2_tomat.h5` | Lokasi bobot MobileNetV2 |
+| `MODEL_PATH` | `models/mobilenetv2_tomat.keras` | Lokasi bobot MobileNetV2 |
 | `IMAGE_SIZE` | `224` | Ukuran input model |
 | `DATASET_DIR` | `datasets` | Folder dataset |
 | `MAX_UPLOAD_BYTES` | `5242880` | Batas ukuran upload (5 MB) |

@@ -11,6 +11,9 @@ pillow==11.1.0
 numpy==2.2.1
 opencv-python==4.10.0.84
 
+# Utilitas dataset (Tim 2, Fase 1)
+kaggle==2.2.4
+
 # Testing
 pytest==8.3.4
 httpx==0.28.1

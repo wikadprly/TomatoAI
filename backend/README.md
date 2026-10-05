@@ -3,6 +3,14 @@
 REST API untuk klasifikasi tingkat kematangan tomat menggunakan pengolahan citra
 dan MobileNetV2.
 
+## Scope Kamera (MVP)
+
+**POST-HARVEST ONLY** — Tomat yang **sudah dipetik** (di tangan, keranjang, meja).
+Bukan tomat di pohon (on-vine). Lihat `datasets/README.md` untuk detail.
+
+> **Alasan**: Background bersih → segmentasi HSV sederhana (Tim 1) cukup.
+> On-vine (daun, bayangan, oklusi) → versi 2.0.
+
 ## Menjalankan
 
 ```bash

@@ -95,6 +95,37 @@ ambang batas yang dilabel dua tahap sekaligus) dan dibuang oleh
 dedup MD5 — sengaja dihilangkan supaya tidak ada citra yang sama
 muncul di dua kelas.
 
+## Scope Kamera (Keputusan Tim)
+
+**POST-HARVEST ONLY (MVP)**
+
+- **Target**: Tomat yang **sudah dipetik** — di tangan, keranjang, meja, konveyor
+- **Bukan**: Tomat yang masih di pohon (on-vine)
+- **Alasan**:
+  - Background bersih (tangan, keranjang, meja polos) → segmentasi HSV sederhana cukup
+  - Pencahayaan relatif konsisten (indoor/outdoor terang)
+  - Minimal oklusi (daun/branch menutupi)
+  - Orientasi tomat relatif seragam
+  - Dataset TomatoCare sudah post-harvest (background bersih)
+
+**On-vine (di pohon) → Versi 2.0 nanti**
+- Butuh dataset tambahan: daun, bayangan, oklusi, jarak jauh
+- Butuh segmentasi canggih (deteksi objek + masking instance)
+- Timeline & scope terpisah
+
+---
+
+## Foto Kamera HP User (Panduan)
+
+Ketika ambil foto sendiri untuk tambah dataset:
+1. **Ambil tomat yang sudah dipetik**
+2. **Taruh di background polos** (kertas putih, meja bersih, keranjang)
+3. **Cahaya cukup** (hindari bayangan tajam, gunakan flash kalau perlu)
+4. **Foto dekat** (tomat memenuhi ~50-70% frame)
+5. **Simpan ke** `datasets/raw/<kelas>/` → jalankan `clean_dataset` & `split_dataset`
+
+---
+
 ## Aspek legalitas data
 
 - Prefer memakai dataset publik yang lisensinya jelas untuk penelitian.

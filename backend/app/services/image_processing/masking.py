@@ -1,4 +1,4 @@
-"""Tahap 4 (Tim 1): masking.
+"""Tahap 4: masking.
 
 Mengubah hasil thresholding menjadi mask final objek tomat, yaitu citra biner
 yang hanya berisi 255 untuk piksel tomat dan 0 untuk piksel lainnya.
@@ -6,7 +6,7 @@ yang hanya berisi 255 untuk piksel tomat dan 0 untuk piksel lainnya.
 
 from PIL import Image
 
-TODO = "Tim 1: isi image_processing/masking.py"
+TODO = "Isi image_processing/masking.py"
 
 
 def build_mask(

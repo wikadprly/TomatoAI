@@ -1,4 +1,4 @@
-# Dependensi machine learning (Tim 2).
+# Dependensi machine learning.
 # Dipisah dari requirements.txt karena TensorFlow besar sekali (~600 MB).
 #
 # Cara pakai:

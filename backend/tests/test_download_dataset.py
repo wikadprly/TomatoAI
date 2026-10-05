@@ -1,4 +1,4 @@
-"""Test untuk scripts/download_dataset.py (Fase 1 - Tim 2).
+"""Test untuk scripts/download_dataset.py.
 
 Bagian yang diuji adalah pemeriksaan prasyarat (kaggle CLI + kaggle.json)
 karena pesan error yang jelas di titik ini yang paling sering menyelamatkan
@@ -21,6 +21,18 @@ def test_prasyarat_melaporkan_cli_dan_token_yang_belum_ada(tmp_path):
 
 def test_prasyarat_lolos_bila_cli_dan_token_tersedia(tmp_path):
     (tmp_path / "kaggle.json").write_text('{"username": "x", "key": "y"}')
+
+    masalah = periksa_prasyarat(
+        env={"KAGGLE_CONFIG_DIR": str(tmp_path)},
+        which=lambda nama: "/usr/bin/kaggle",
+    )
+
+    assert masalah == []
+
+
+def test_prasyarat_lolos_dengan_access_token_format_baru(tmp_path):
+    # Kaggle sekarang memakai access_token (KGAT_...) alih-alih kaggle.json.
+    (tmp_path / "access_token").write_text("KGAT_contoh_token")
 
     masalah = periksa_prasyarat(
         env={"KAGGLE_CONFIG_DIR": str(tmp_path)},

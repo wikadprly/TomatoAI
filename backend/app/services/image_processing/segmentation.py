@@ -1,4 +1,4 @@
-"""Tahap 6 (Tim 1): segmentasi objek tomat.
+"""Tahap 6: segmentasi objek tomat.
 
 Menggabungkan seluruh tahap sebelumnya menjadi satu fungsi yang mengembalikan
 citra tomat yang sudah terisolasi dari latar belakang, siap dikirim ke model.
@@ -6,7 +6,7 @@ citra tomat yang sudah terisolasi dari latar belakang, siap dikirim ke model.
 
 from PIL import Image
 
-TODO = "Tim 1: isi image_processing/segmentation.py"
+TODO = "Isi image_processing/segmentation.py"
 
 
 def segment_tomato(

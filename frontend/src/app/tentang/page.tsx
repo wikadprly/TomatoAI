@@ -18,8 +18,8 @@ const technology = [
 ];
 
 const assignments = [
-  "Tim 1: preprocessing, RGB ke HSV, thresholding, masking, morphology, segmentasi objek tomat, analisis warna.",
-  "Tim 2: dataset, training/fine-tuning MobileNetV2, klasifikasi tiga kelas, evaluasi, prediksi, confidence score.",
+  "Pengolahan citra: preprocessing, RGB ke HSV, thresholding, masking, morphology, segmentasi objek tomat, analisis warna.",
+  "Model AI: dataset, training/fine-tuning MobileNetV2, klasifikasi tiga kelas, evaluasi, prediksi, confidence score.",
   "Tim 3 dan 4: frontend Next.js, UI, upload atau kamera, tampilan hasil klasifikasi, responsive design.",
 ];
 
@@ -42,7 +42,7 @@ export default function TentangPage() {
           items={[
             "Backend sudah memiliki endpoint /api/v1/health dan /api/v1/predict.",
             "Endpoint predict mengembalikan 503 sampai bobot MobileNetV2 tersedia.",
-            "Bagian pengolahan citra dan model masih kosong dan akan diisi oleh Tim 1 dan Tim 2.",
+            "Bagian pengolahan citra dan model masih kosong dan akan segera diisi.",
             "Frontend belum memakai database, authentication, atau dashboard admin.",
           ]}
         />

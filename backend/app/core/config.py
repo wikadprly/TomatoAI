@@ -15,7 +15,7 @@ class Settings:
     APP_VERSION: str = "0.1.0"
     API_PREFIX: str = "/api/v1"
 
-    # --- Model MobileNetV2 (Tim 2) ---
+    # --- Model MobileNetV2 ---
     # Format .keras: format native Keras 3 (TensorFlow 2.18).
     MODEL_PATH: Path = Path(
         os.getenv("MODEL_PATH") or BASE_DIR / "models" / "mobilenetv2_tomat.keras"
@@ -29,7 +29,7 @@ class Settings:
         "matang",
     ]
 
-    # --- Dataset (Tim 2) ---
+    # --- Dataset ---
     DATASET_DIR: Path = Path(os.getenv("DATASET_DIR") or BASE_DIR / "datasets")
 
     # --- Upload gambar dari frontend ---

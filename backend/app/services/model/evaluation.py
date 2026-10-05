@@ -1,10 +1,10 @@
-"""Tim 2: evaluasi model.
+"""Evaluasi model.
 
 Evaluasi selalu dilakukan pada data uji (test set) yang tidak pernah dipakai
 saat training, supaya angka accuracy tidak terlalu optimis.
 """
 
-TODO = "Tim 2: isi model/evaluation.py"
+TODO = "Isi model/evaluation.py"
 
 
 def evaluate(model, test_dataset) -> dict[str, float]:

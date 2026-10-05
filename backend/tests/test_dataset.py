@@ -1,4 +1,4 @@
-"""Test untuk app/services/model/dataset.py (Fase 1 - Tim 2).
+"""Test untuk app/services/model/dataset.py.
 
 class_counts diuji tanpa TensorFlow (objek tiruan sederhana).
 build_datasets butuh TensorFlow; di mesin tanpa TF test-nya di-skip
@@ -75,7 +75,7 @@ def test_build_datasets_augmentasi_hanya_di_train(tf, pohon_dataset):
         data_dir=pohon_dataset, image_size=64, batch_size=2
     )
 
-    # Train: augmentasi sesuai catatan timeline Tim 2.
+    # Train: augmentasi sesuai parameter proyek.
     gen_train = train_ds.image_data_generator
     assert gen_train.rotation_range == 20
     assert gen_train.shear_range == 0.2

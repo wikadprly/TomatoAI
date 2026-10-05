@@ -1,4 +1,4 @@
-"""Tahap model - SATUAN KERJA TIM 2.
+"""Tahap model.
 
 Isi file di folder ini:
 

@@ -1,8 +1,8 @@
 """Pipeline end-to-end: gambar -> citra ternarya -> MobileNetV2 -> label.
 
 Modul ini hanya merangkai urutan tahap. Logika tiap tahap ada di:
-- `services/image_processing/` (Tim 1)
-- `services/model/` (Tim 2)
+- `services/image_processing/`
+- `services/model/`
 """
 
 from app.core.config import settings
@@ -26,12 +26,12 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
 
     Raises:
         ModelNotReadyError: bila bobot MobileNetV2 belum ada di disk.
-        NotImplementedError: bila modul Tim 1 atau Tim 2 belum diisi.
+        NotImplementedError: bila modul pemrosesan citra atau model belum diisi.
     """
     if not model_is_ready():
         raise ModelNotReadyError(
             f"Model belum siap. Bobot tidak ditemukan di {settings.MODEL_PATH}. "
-            "Tim 2 perlu menyelesaikan training/fine-tuning MobileNetV2 terlebih dahulu."
+            "Modul model perlu menyelesaikan training/fine-tuning MobileNetV2 terlebih dahulu."
         )
 
     image = load_image_from_bytes(image_bytes)

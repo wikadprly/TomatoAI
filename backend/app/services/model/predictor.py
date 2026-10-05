@@ -1,4 +1,4 @@
-"""Tim 2: prediksi memakai MobileNetV2.
+"""Prediksi memakai MobileNetV2.
 
 Fungsi di sini yang dipakai `services/pipeline.py` dan route `/predict`.
 `model_is_ready()` sudah berfungsi nyata: ia hanya mengecek apakah file bobot
@@ -12,7 +12,7 @@ from PIL import Image
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
 
-TODO = "Tim 2: isi model/predictor.py"
+TODO = "Isi model/predictor.py"
 
 
 def model_is_ready() -> bool:
@@ -41,7 +41,7 @@ def predict_proba(model, image: Image.Image) -> dict[str, float]:
 
     Args:
         model: Model hasil `load_model`.
-        image: Citra tomat hasil segmentasi Tim 1.
+        image: Citra tomat hasil segmentasi.
 
     Returns:
         Dictionary {nama_kelas: nilai_keyakinan}, jumlah nilainya 1.0.
@@ -60,8 +60,8 @@ def predict_label(
     ke frontend.
 
     Args:
-        image: Citra tomat hasil segmentasi Tim 1.
-        color_analysis: Analisis warna dari Tim 1, boleh `None`.
+        image: Citra tomat hasil segmentasi.
+        color_analysis: Analisis warna dari tahap segmentasi, boleh `None`.
 
     Returns:
         Hasil klasifikasi beserta confidence score.

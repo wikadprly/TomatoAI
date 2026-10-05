@@ -1,4 +1,4 @@
-"""Tahap 2 (Tim 1): konversi ruang warna RGB ke HSV.
+"""Tahap 2: konversi ruang warna RGB ke HSV.
 
 Mengapa HSV dipakai:
 - Hue memisahkan warna tomat dari warna hijau daun tanpa terpengaruh cahaya.
@@ -8,7 +8,7 @@ Mengapa HSV dipakai:
 
 from PIL import Image
 
-TODO = "Tim 1: isi image_processing/color_space.py"
+TODO = "Isi image_processing/color_space.py"
 
 
 def rgb_to_hsv(image: Image.Image) -> Image.Image:

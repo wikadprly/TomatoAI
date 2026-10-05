@@ -1,4 +1,4 @@
-"""Tahap 3 (Tim 1): thresholding.
+"""Tahap 3: thresholding.
 
 Memisahkan piksel tomat dari latar belakang berdasarkan ambang (threshold)
 pada kanal Hue, Saturation, dan Value hasil konversi HSV.
@@ -6,7 +6,7 @@ pada kanal Hue, Saturation, dan Value hasil konversi HSV.
 
 from PIL import Image
 
-TODO = "Tim 1: isi image_processing/thresholding.py"
+TODO = "Isi image_processing/thresholding.py"
 
 
 def apply_threshold(

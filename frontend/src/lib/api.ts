@@ -39,7 +39,7 @@ export async function getHealth(): Promise<HealthResponse> {
 /**
  * Kirim satu foto tomat ke backend untuk diklasifikasikan.
  *
- * Endpoint ini akan mengembalikan 503 sampai Tim 2 selesai membuat bobot
+ * Endpoint ini akan mengembalikan 503 sampai bobot model tersedia
  * MobileNetV2, jadi pemanggil harus siap menangani error.
  */
 export async function predictTomato(file: File): Promise<PredictionResponse> {

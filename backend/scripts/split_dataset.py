@@ -1,4 +1,4 @@
-"""Fase 1 (Tim 2): pembagian dataset bersih menjadi train/val/test.
+"""Pembagian dataset bersih menjadi train/val/test.
 
 Pembagian dilakukan stratified per kelas supaya proporsi kelas seimbang di
 ketiga split. Rasio bawaan 70:15:15 sesuai keputusan tim (lihat

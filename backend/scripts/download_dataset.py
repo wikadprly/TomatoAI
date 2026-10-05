@@ -1,9 +1,11 @@
-"""Fase 1 (Tim 2): unduh dataset tomat dari Kaggle ke datasets/raw/.
+"""Unduh dataset tomat dari Kaggle ke datasets/raw/.
 
 Prasyarat (sekali saja):
 1. Buat akun Kaggle, lalu buka https://www.kaggle.com/settings -> API ->
-   "Create New Token". Berkas `kaggle.json` akan terunduh.
-2. Simpan berkas itu ke `~/.kaggle/kaggle.json`.
+   buat token baru.
+2. Ikuti perintah yang diberikan Kaggle. Format baru: token KGAT_...
+   disimpan ke `~/.kaggle/access_token`. Format lama: berkas kaggle.json
+   disimpan ke `~/.kaggle/kaggle.json`. Keduanya diterima.
 3. Pasang kaggle CLI: `pip install kaggle`.
 
 Mencari kandidat dataset:
@@ -42,11 +44,17 @@ def periksa_prasyarat(env=None, which=shutil.which) -> list[str]:
         )
 
     config_dir = Path(env.get("KAGGLE_CONFIG_DIR") or Path.home() / ".kaggle")
-    if not (config_dir / "kaggle.json").is_file():
+    # Kaggle punya dua mekanisme kredensial: access_token (format baru,
+    # KGAT_...) dan kaggle.json (format lama). Salah satu cukup.
+    punya_kredensial = (config_dir / "access_token").is_file() or (
+        config_dir / "kaggle.json"
+    ).is_file()
+    if not punya_kredensial:
         masalah.append(
-            f"Token kaggle.json tidak ditemukan di {config_dir}. "
-            "Unduh dari https://www.kaggle.com/settings (bagian API) lalu "
-            f"simpan sebagai {config_dir / 'kaggle.json'}."
+            f"Kredensial Kaggle tidak ditemukan di {config_dir}. "
+            "Buka https://www.kaggle.com/settings (bagian API), buat token, "
+            "lalu ikuti perintah yang diberikan Kaggle (menyimpan "
+            "access_token atau kaggle.json ke folder tersebut)."
         )
 
     return masalah

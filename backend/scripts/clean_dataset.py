@@ -1,4 +1,4 @@
-"""Fase 1 (Tim 2): pembersihan dan normalisasi dataset tomat mentah.
+"""Pembersihan dan normalisasi dataset tomat mentah.
 
 Dataset hasil unduhan Kaggle sering berantakan:
 - nama folder kelas tidak konsisten (`unripe`, `green`, `Fully Ripened`, ...),
@@ -11,6 +11,9 @@ Script ini menormalkan semuanya menjadi struktur:
     |-- mentah/mentah_001.jpg
     |-- setengah_matang/setengah_matang_001.jpg
     `-- matang/matang_003.jpg
+
+Folder kelas boleh langsung di bawah raw/ ataupun bersarang
+(di dalam folder train/val/test seperti kebanyakan dataset Kaggle).
 
 Semua citra keluaran adalah RGB JPEG. Berkas corrupt dipindahkan ke folder
 karantina supaya bisa diperiksa manual, bukan dihapus diam-diam.
@@ -45,6 +48,7 @@ DEFAULT_CLASS_ALIASES: dict[str, set[str]] = {
         "half ripened",
         "breaker",
         "turning",
+        "turner",
         "pink",
         "light red",
         "semi ripe",
@@ -123,9 +127,14 @@ def clean_dataset(
 
     seen_hashes: set[str] = set()
 
-    for folder_sumber in sorted(raw_dir.iterdir()):
-        if not folder_sumber.is_dir():
-            continue
+    # Jelajahi seluruh pohon folder: dataset Kaggle sering membungkus
+    # kelas di dalam folder train/val/test (contoh: raw/train/green/).
+    # Folder yang namanya cocok dengan alias kelas diproses, yang lain
+    # hanya dilalui (berkas di dalamnya dihitung sebagai tidak dikenal).
+    semua_folder = sorted(
+        p for p in raw_dir.rglob("*") if p.is_dir()
+    )
+    for folder_sumber in semua_folder:
         kelas = peta_alias.get(_normalkan_nama(folder_sumber.name))
         if kelas is None:
             report["skipped_unknown"] += sum(

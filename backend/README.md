@@ -14,8 +14,8 @@ uvicorn app.main:app --reload
 
 Dokumentasi interaktif: <http://localhost:8000/docs>
 
-TensorFlow tidak ikut `requirements.txt` karena ukurannya besar. Tim 2
-menginstalnya secara terpisah:
+TensorFlow tidak ikut `requirements.txt` karena ukurannya besar. Instal
+secara terpisah:
 
 ```bash
 pip install -r requirements-ml.txt
@@ -65,17 +65,17 @@ Kode error yang mungkin muncul:
 | 400 | File gambar kosong |
 | 413 | Ukuran file melebihi `MAX_UPLOAD_BYTES` |
 | 415 | Format gambar tidak didukung |
-| 501 | Modul pemrosesan Tim 1 atau Tim 2 belum diisi |
+| 501 | Modul pemrosesan citra atau model belum diisi |
 | 503 | Bobot MobileNetV2 belum tersedia |
 
-## Pembagian tim
+## Pembagian modul
 
-- `app/services/image_processing/` - **Tim 1**: seluruh tahap pemrosesan citra.
-- `app/services/model/` - **Tim 2**: dataset, training, evaluasi, prediksi.
+- `app/services/image_processing/` - seluruh tahap pemrosesan citra.
+- `app/services/model/` - dataset, training, evaluasi, prediksi.
 
 Fungsi di kedua folder tersebut masih kosong dan sengaja `raise
 NotImplementedError` supaya tidak ada hasil klasifikasi palsu. Backend baru
-dapat mengembalikan prediksi setelah Tim 2 membuat bobot model.
+dapat mengembalikan prediksi setelah bobot model tersedia.
 
 ## Testing
 

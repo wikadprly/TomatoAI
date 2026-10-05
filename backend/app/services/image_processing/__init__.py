@@ -1,4 +1,4 @@
-"""Tahap pemrosesan citra - SATUAN KERJA TIM 1.
+"""Tahap pemrosesan citra.
 
 Setiap file mewakili satu tahap berurutan pada pipeline:
 

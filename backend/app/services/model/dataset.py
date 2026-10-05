@@ -1,4 +1,4 @@
-"""Tim 2: dataset tomat.
+"""Dataset tomat.
 
 Sumber dataset (pilih salah satu, jangan campur tanpa alasan kuat):
 - dataset publik (misalnya di Kaggle) yang sudah dilisensikan untuk penelitian,
@@ -34,7 +34,7 @@ from pathlib import Path
 
 from app.core.config import settings
 
-# Parameter augmentasi sesuai catatan timeline Tim 2 (Minggu 1).
+# Parameter augmentasi real-time (hanya untuk data train).
 # Hanya dipakai untuk data train; val/test cukup rescale.
 TRAIN_AUGMENTATION = {
     "rescale": 1.0 / 255,

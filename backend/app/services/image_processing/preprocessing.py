@@ -1,4 +1,4 @@
-"""Tahap 1 (Tim 1): pra-pemrosesan citra.
+"""Tahap 1: pra-pemrosesan citra.
 
 Tanggung jawab:
 - Membaca bytes gambar (hasil upload frontend) menjadi objek citra.
@@ -11,7 +11,7 @@ from PIL import Image
 
 from app.core.config import settings
 
-TODO = "Tim 1: isi image_processing/preprocessing.py"
+TODO = "Isi image_processing/preprocessing.py"
 
 
 def load_image_from_bytes(image_bytes: bytes) -> Image.Image:

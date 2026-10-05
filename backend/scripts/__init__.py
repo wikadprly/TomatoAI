@@ -1,4 +1,4 @@
-"""Script utilitas Tim 2 untuk pengelolaan dataset (Fase 1).
+"""Script utilitas untuk pengelolaan dataset.
 
 Dijalankan dari folder `backend/`:
     python -m scripts.download_dataset <slug-dataset-kaggle>

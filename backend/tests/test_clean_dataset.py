@@ -1,4 +1,4 @@
-"""Test untuk scripts/clean_dataset.py (Fase 1 - Tim 2).
+"""Test untuk scripts/clean_dataset.py.
 
 Dataset mentah dari Kaggle sering berantakan: nama folder kelas tidak konsisten,
 ada file corrupt, duplikat, dan format campuran (RGBA, PNG, dsb).
@@ -86,3 +86,24 @@ def test_clean_dataset_mengkarantina_file_corrupt(raw_dataset, tmp_path):
 def test_clean_dataset_menolak_folder_mentah_yang_tidak_ada(tmp_path):
     with pytest.raises(FileNotFoundError):
         clean_dataset(tmp_path / "tidak_ada", tmp_path / "clean", tmp_path / "quarantine")
+
+
+def test_clean_dataset_menemukan_kelas_di_folder_bersarang(tmp_path):
+    """Struktur ala dataset Kaggle: raw/train/<kelas>/, raw/val/<kelas>/.
+
+    Folder pembungkus (train/val/test) bukan kelas, jadi harus dilalui
+    sampai folder bernama alias kelas ditemukan.
+    """
+    raw = tmp_path / "raw"
+    # Warna beda per citra supaya tidak kena dedup MD5.
+    for split, warna in zip(
+        ("train", "val", "test"), [(0, 90, 0), (10, 100, 5), (20, 110, 10)]
+    ):
+        _buat_citra(raw / split / "unripe" / f"{split}_1.jpg", warna=warna)
+    _buat_citra(raw / "test" / "Fully Ripened" / "test_2.jpg", warna=(200, 0, 0))
+
+    report = clean_dataset(raw, tmp_path / "clean", tmp_path / "quarantine")
+
+    assert report["mentah"] == 3
+    assert report["matang"] == 1
+    assert report["skipped_unknown"] == 0

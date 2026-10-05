@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class ColorAnalysis(BaseModel):
-    """Ringkasan analisis warna objek tomat (hasil Tim 1)."""
+    """Ringkasan analisis warna objek tomat (hasil segmentasi)."""
 
     mean_hue: float | None = Field(
         default=None,

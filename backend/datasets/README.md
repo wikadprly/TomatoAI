@@ -1,9 +1,9 @@
-# Dataset Tomat (Tim 2)
+# Dataset Tomat
 
 Folder ini tempat meletakkan dataset tomat. Isinya **tidak** di-commit ke Git
 karena ukurannya besar. Lihat `.gitignore`.
 
-## Alur kerja Fase 1 (download -> bersih -> split)
+## Alur kerja (download -> bersih -> split)
 
 Semua perintah dijalankan dari folder `backend/`:
 
@@ -62,6 +62,38 @@ datasets/
 
 Nama folder kelas **harus sama** dengan `CLASS_NAMES` di
 `app/core/config.py`: `mentah`, `setengah_matang`, `matang`.
+
+## Dataset yang dipakai
+
+**TomatoCare: Tomato Maturity Image Dataset**
+(`sinchanashivanand/tomatocare-tomato-maturity-image-dataset`)
+- Lisensi: **CC0-1.0** (bebas dipakai, termasuk penelitian)
+- 4.500 citra, seimbang: 900 per tahap (630 train + 135 val + 135 test
+  pada dataset asli)
+- 5 tahap kematangan USDA: green, breaker, turner, pink, red
+
+### Pemetaan ke 3 kelas proyek (keputusan tim)
+
+| Kelas proyek | Tahap USDA | Jumlah (setelah dedup) |
+| --- | --- | --- |
+| `mentah` | green | 899 |
+| `setengah_matang` | breaker + turner + pink | 2693 |
+| `matang` | red | 899 |
+
+Distribusi ~1:3:1 (tidak seimbang) sengaja dipertahankan karena
+pemetaan ini paling benar secara agronomi; ketidakseimbangannya
+ditutupi dengan **class weighting** saat training.
+
+Alternatif pemetaan seimbang (~1:2:2): `mentah`=green,
+`setengah_matang`=breaker+turner, `matang`=pink+red. Untuk
+menukarnya: pindahkan `"pink"` dari `setengah_matang` ke `matang`
+di `DEFAULT_CLASS_ALIASES` (`scripts/clean_dataset.py`), lalu
+jalankan ulang `clean_dataset` dan `split_dataset` (~30 detik).
+
+Catatan: 9 citra ditemukan byte-identik lintas kelas (foto tomat
+ambang batas yang dilabel dua tahap sekaligus) dan dibuang oleh
+dedup MD5 — sengaja dihilangkan supaya tidak ada citra yang sama
+muncul di dua kelas.
 
 ## Aspek legalitas data
 

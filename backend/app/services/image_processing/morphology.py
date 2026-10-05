@@ -1,4 +1,4 @@
-"""Tahap 5 (Tim 1): morphology.
+"""Tahap 5: morphology.
 
 Operasi matematis pada mask untuk membersihkan noise:
 - opening (erosi lalu dilasi): membuang piksel noise kecil.
@@ -7,7 +7,7 @@ Operasi matematis pada mask untuk membersihkan noise:
 
 from PIL import Image
 
-TODO = "Tim 1: isi image_processing/morphology.py"
+TODO = "Isi image_processing/morphology.py"
 
 
 def apply_morphology(mask: Image.Image, kernel_size: int = 3) -> Image.Image:

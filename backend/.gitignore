@@ -22,13 +22,13 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Bobot model (Tim 2)
+# Bobot model
 # File .h5 / .keras terlalu besar untuk Git.
 # Model sebaiknya dibagikan lewat Google Drive atau GitHub Release.
 models/*
 !models/.gitkeep
 
-# Dataset (Tim 2)
+# Dataset
 # Dataset photo tomat juga terlalu besar untuk Git.
 datasets/*
 !datasets/.gitkeep

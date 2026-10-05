@@ -1,4 +1,4 @@
-"""Tim 2: training dan fine-tuning MobileNetV2.
+"""Training dan fine-tuning MobileNetV2.
 
 Rencana kerja yang diharapkan:
 1. Muat MobileNetV2 pretrained dengan `weights="imagenet"`.
@@ -12,7 +12,7 @@ Catatan: epoch, batch size, learning rate, dan augmentation sebaiknya
 dicatat di laporan sj ah, bukan ditebak.
 """
 
-TODO = "Tim 2: isi model/training.py"
+TODO = "Isi model/training.py"
 
 
 def train():

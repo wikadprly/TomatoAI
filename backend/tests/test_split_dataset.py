@@ -1,4 +1,4 @@
-"""Test untuk scripts/split_dataset.py (Fase 1 - Tim 2).
+"""Test untuk scripts/split_dataset.py.
 
 Dataset bersih dibagi stratified per kelas ke train/val/test dengan rasio
 bawaan 70:15:15 (keputusan tim, sesuai backend/datasets/README.md).

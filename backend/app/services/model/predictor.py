@@ -5,14 +5,16 @@ Fungsi di sini yang dipakai `services/pipeline.py` dan route `/predict`.
 ada di disk. Yang belum ada adalah pemuatan model dan perhitungannya.
 """
 
+import numpy as np
 from pathlib import Path
 
 from PIL import Image
 
+from tensorflow.keras.preprocessing import image as k_image
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
-
-TODO = "Isi model/predictor.py"
 
 
 def model_is_ready() -> bool:
@@ -33,7 +35,9 @@ def load_model():
         raise FileNotFoundError(
             f"Bobot model belum tersedia di {settings.MODEL_PATH}."
         )
-    raise NotImplementedError(TODO)
+    from tensorflow.keras.models import load_model
+
+    return load_model(settings.MODEL_PATH)
 
 
 def predict_proba(model, image: Image.Image) -> dict[str, float]:
@@ -46,7 +50,27 @@ def predict_proba(model, image: Image.Image) -> dict[str, float]:
     Returns:
         Dictionary {nama_kelas: nilai_keyakinan}, jumlah nilainya 1.0.
     """
-    raise NotImplementedError(TODO)
+    # Resize sesuai IMAGE_SIZE dari config
+    img = image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
+
+    # Convert ke array (RGB -> float32)
+    img_array = k_image.img_to_array(img)
+
+    # Tambahkan batch dimension: shape (1, H, W, 3)
+    img_array = np.expand_dims(img_array, axis=0)
+
+    # Preprocessing MobileNetV2 (normalisasi ke [-1, 1])
+    img_array = preprocess_input(img_array)
+
+    # Prediksi probabilitas
+    preds = model.predict(img_array, verbose=0)[0]  # shape: (3,)
+
+    # Map ke dict {class_name: probability}
+    probs: dict[str, float] = {}
+    for name, prob in zip(settings.CLASS_NAMES, preds):
+        probs[name] = float(prob)
+
+    return probs
 
 
 def predict_label(
@@ -66,4 +90,16 @@ def predict_label(
     Returns:
         Hasil klasifikasi beserta confidence score.
     """
-    raise NotImplementedError(TODO)
+    model = load_model()
+    probs = predict_proba(model, image)
+
+    # Ambil kelas dengan probabilitas tertinggi
+    best_class = max(probs, key=probs.get)
+    confidence = probs[best_class]
+
+    return PredictionResponse(
+        label=best_class,
+        confidence=confidence,
+        probabilities=probs,
+        color_analysis=color_analysis,
+    )

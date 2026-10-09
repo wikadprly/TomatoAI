@@ -1,3 +1,4 @@
+
 # Dataset Tomat
 
 Folder ini tempat meletakkan dataset tomat. Isinya **tidak** di-commit ke Git
@@ -5,7 +6,7 @@ karena ukurannya besar. Lihat `.gitignore`.
 
 ## Alur kerja (download -> bersih -> split)
 
-Semua perintah dijalankan dari folder `backend/`:
+Semua perintah dijalankan dari folder `backend/`: 
 
 ```bash
 # 1. Unduh dataset dari Kaggle ke datasets/raw/
@@ -67,6 +68,7 @@ Nama folder kelas **harus sama** dengan `CLASS_NAMES` di
 
 **TomatoCare: Tomato Maturity Image Dataset**
 (`sinchanashivanand/tomatocare-tomato-maturity-image-dataset`)
+
 - Lisensi: **CC0-1.0** (bebas dipakai, termasuk penelitian)
 - 4.500 citra, seimbang: 900 per tahap (630 train + 135 val + 135 test
   pada dataset asli)
@@ -74,11 +76,11 @@ Nama folder kelas **harus sama** dengan `CLASS_NAMES` di
 
 ### Pemetaan ke 3 kelas proyek (keputusan tim)
 
-| Kelas proyek | Tahap USDA | Jumlah (setelah dedup) |
-| --- | --- | --- |
-| `mentah` | green | 899 |
-| `setengah_matang` | breaker + turner + pink | 2693 |
-| `matang` | red | 899 |
+| Kelas proyek        | Tahap USDA              | Jumlah (setelah dedup) |
+| ------------------- | ----------------------- | ---------------------- |
+| `mentah`          | green                   | 899                    |
+| `setengah_matang` | breaker + turner + pink | 2693                   |
+| `matang`          | red                     | 899                    |
 
 Distribusi ~1:3:1 (tidak seimbang) sengaja dipertahankan karena
 pemetaan ini paling benar secara agronomi; ketidakseimbangannya
@@ -94,37 +96,6 @@ Catatan: 9 citra ditemukan byte-identik lintas kelas (foto tomat
 ambang batas yang dilabel dua tahap sekaligus) dan dibuang oleh
 dedup MD5 — sengaja dihilangkan supaya tidak ada citra yang sama
 muncul di dua kelas.
-
-## Scope Kamera (Keputusan Tim)
-
-**POST-HARVEST ONLY (MVP)**
-
-- **Target**: Tomat yang **sudah dipetik** — di tangan, keranjang, meja, konveyor
-- **Bukan**: Tomat yang masih di pohon (on-vine)
-- **Alasan**:
-  - Background bersih (tangan, keranjang, meja polos) → segmentasi HSV sederhana cukup
-  - Pencahayaan relatif konsisten (indoor/outdoor terang)
-  - Minimal oklusi (daun/branch menutupi)
-  - Orientasi tomat relatif seragam
-  - Dataset TomatoCare sudah post-harvest (background bersih)
-
-**On-vine (di pohon) → Versi 2.0 nanti**
-- Butuh dataset tambahan: daun, bayangan, oklusi, jarak jauh
-- Butuh segmentasi canggih (deteksi objek + masking instance)
-- Timeline & scope terpisah
-
----
-
-## Foto Kamera HP User (Panduan)
-
-Ketika ambil foto sendiri untuk tambah dataset:
-1. **Ambil tomat yang sudah dipetik**
-2. **Taruh di background polos** (kertas putih, meja bersih, keranjang)
-3. **Cahaya cukup** (hindari bayangan tajam, gunakan flash kalau perlu)
-4. **Foto dekat** (tomat memenuhi ~50-70% frame)
-5. **Simpan ke** `datasets/raw/<kelas>/` → jalankan `clean_dataset` & `split_dataset`
-
----
 
 ## Aspek legalitas data
 

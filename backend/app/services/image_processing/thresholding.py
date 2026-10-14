@@ -5,8 +5,8 @@ pada kanal Hue, Saturation, dan Value hasil konversi HSV.
 """
 
 from PIL import Image
-
-TODO = "Isi image_processing/thresholding.py"
+import numpy as np
+import cv2
 
 
 def apply_threshold(
@@ -24,7 +24,10 @@ def apply_threshold(
     Returns:
         Citra biner: 255 bila nilai piksel berada di antara kedua ambang.
     """
-    raise NotImplementedError(TODO)
+    arr = np.array(channel)
+    # Gunakan cv2.inRange untuk membuat mask berdasarkan min dan max value
+    mask = cv2.inRange(arr, min_value, max_value)
+    return Image.fromarray(mask)
 
 
 def threshold_hsv(
@@ -44,4 +47,14 @@ def threshold_hsv(
     Returns:
         Mask biner kandidat tomat.
     """
-    raise NotImplementedError(TODO)
+    hsv_np = np.array(hsv_image)
+    
+    # Tentukan batas bawah dan batas atas dalam format HSV OpenCV
+    # Hue: 0-179, Saturation: 0-255, Value: 0-255
+    lower_bound = np.array([hue_range[0], saturation_min, value_min])
+    upper_bound = np.array([hue_range[1], 255, 255])
+    
+    # Buat mask biner menggunakan cv2.inRange
+    mask = cv2.inRange(hsv_np, lower_bound, upper_bound)
+    
+    return Image.fromarray(mask)

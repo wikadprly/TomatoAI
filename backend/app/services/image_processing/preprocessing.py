@@ -8,6 +8,7 @@ Tanggung jawab:
 """
 
 from PIL import Image
+from io import BytesIO
 
 from app.core.config import settings
 
@@ -23,7 +24,17 @@ def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
     Returns:
         Citra RGB dengan ukuran `settings.IMAGE_SIZE` x `settings.IMAGE_SIZE`.
     """
-    raise NotImplementedError(TODO)
+    # Konversi bytes ke PIL Image
+    image = Image.open(BytesIO(image_bytes))
+    
+    # Pastikan mode RGB (jika grayscale atau RGBA)
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    
+    # Resize sesuai ukuran input model
+    image = image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
+    
+    return image
 
 
 def resize_image(image: Image.Image, size: int | None = None) -> Image.Image:

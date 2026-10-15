@@ -57,7 +57,7 @@ juga diisi lewat environment variable tanpa file `.env`.
   "status": "ok",
   "app": "TomatoAI API",
   "version": "0.1.0",
-  "model_loaded": false
+  "model_loaded": true
 }
 ```
 
@@ -73,17 +73,31 @@ Kode error yang mungkin muncul:
 | 400 | File gambar kosong |
 | 413 | Ukuran file melebihi `MAX_UPLOAD_BYTES` |
 | 415 | Format gambar tidak didukung |
-| 501 | Modul pemrosesan citra atau model belum diisi |
+| 501 | Cadangan: modul pemrosesan citra/model belum diisi |
 | 503 | Bobot MobileNetV2 belum tersedia |
 
 ## Pembagian modul
 
-- `app/services/image_processing/` - seluruh tahap pemrosesan citra.
-- `app/services/model/` - dataset, training, evaluasi, prediksi.
+- `app/services/image_processing/` - seluruh tahap pemrosesan citra
+  (preprocessing, RGB ke HSV, thresholding, masking, morphology, segmentasi,
+  analisis warna). Modul ini sudah terisi.
+- `app/services/model/` - dataset, training, evaluasi, prediksi. Modul ini
+  sudah terisi.
 
-Fungsi di kedua folder tersebut masih kosong dan sengaja `raise
-NotImplementedError` supaya tidak ada hasil klasifikasi palsu. Backend baru
-dapat mengembalikan prediksi setelah bobot model tersedia.
+`app/services/pipeline.py` merangkai keduanya:
+
+```text
+gambar -> preprocessing -> denoise -> segmentasi (mask + HSV)
+       -> analisis warna -> MobileNetV2 -> label + confidence
+```
+
+Bila segmentasi tidak menemukan objek tomat (mask kosong), pipeline memakai
+citra asli tanpa segmentasi dan mengisi `color_analysis` dengan `null`,
+supaya model tidak menerima citra hitam semua.
+
+Model disimpan di `backend/models/mobilenetv2_tomat.keras` dan dilatih lewat
+`training_colab.ipynb` dengan `rescale=1/255`; tahap prediksi memakai rescale
+yang sama.
 
 ## Testing
 
@@ -91,5 +105,16 @@ dapat mengembalikan prediksi setelah bobot model tersedia.
 pytest
 ```
 
-Isi test sekarang hanya smoke test: memastikan aplikasi bisa dimuat dan route
-`health` berjalan.
+Test mencakup:
+
+- smoke test FastAPI (`test_health.py`),
+- pipeline dataset download/clean/split (`test_*_dataset.py`),
+- pengolahan citra: thresholding, segmentasi, analisis warna
+  (`test_image_processing.py`),
+- integrasi pipeline prediksi, dengan model ditiru
+  (`test_pipeline.py`),
+- metrik evaluasi, dengan model dan dataset ditiru
+  (`test_evaluation.py`).
+
+Test yang butuh TensorFlow (mis. `build_datasets`) di-skip otomatis di mesin
+tanpa TensorFlow.

@@ -1,17 +1,17 @@
 """Prediksi memakai MobileNetV2.
 
 Fungsi di sini yang dipakai `services/pipeline.py` dan route `/predict`.
-`model_is_ready()` sudah berfungsi nyata: ia hanya mengecek apakah file bobot
-ada di disk. Yang belum ada adalah pemuatan model dan perhitungannya.
+
+Catatan preprocessing: model TomatoAI dilatih dengan citra yang di-rescale
+ke rentang 0-1 (`rescale=1/255`), bukan `preprocess_input` MobileNetV2 yang
+menormalisasi ke [-1, 1]. Inferensi WAJIB memakai rescale yang sama supaya
+distribusi input cocok dengan bobot hasil training.
 """
 
 import numpy as np
 from pathlib import Path
 
 from PIL import Image
-
-from tensorflow.keras.preprocessing import image as k_image
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
@@ -54,13 +54,13 @@ def predict_proba(model, image: Image.Image) -> dict[str, float]:
     img = image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
 
     # Convert ke array (RGB -> float32)
-    img_array = k_image.img_to_array(img)
+    img_array = np.asarray(img, dtype=np.float32)
 
     # Tambahkan batch dimension: shape (1, H, W, 3)
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Preprocessing MobileNetV2 (normalisasi ke [-1, 1])
-    img_array = preprocess_input(img_array)
+    # Preprocessing yang sama dengan saat training: rescale ke 0-1.
+    img_array = img_array / 255.0
 
     # Prediksi probabilitas
     preds = model.predict(img_array, verbose=0)[0]  # shape: (3,)

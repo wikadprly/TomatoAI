@@ -29,20 +29,36 @@ def segment_tomato(
     Returns:
         Citra tomat yang sudah terisolasi dari latar belakang.
     """
+    segmented_image, _, _ = segment_tomato_with_mask(image, hsv_image)
+    return segmented_image
+
+
+def segment_tomato_with_mask(
+    image: Image.Image,
+    hsv_image: Image.Image | None = None,
+) -> tuple[Image.Image, Image.Image, Image.Image]:
+    """Sama seperti `segment_tomato`, tapi sekaligus mengembalikan mask & HSV.
+
+    Dipakai pipeline prediksi supaya tahap analisis warna
+    (`color_analysis.analyze_color`) bisa memakai mask dan HSV yang sama,
+    tanpa menghitung ulang.
+
+    Returns:
+        Tuple (citra_tomat, mask_final, citra_hsv).
+    """
     # 1. Konversi ke HSV jika belum ada
     if hsv_image is None:
         hsv_img = color_space.rgb_to_hsv(image)
     else:
         hsv_img = hsv_image
 
-    # 2. Thresholding HSV (rentang warna standar untuk tomat, misal Hue 0-25 atau 160-179)
-    # Sesuaikan rentang hue (min_hue, max_hue), saturation_min, value_min
-    # Nilai standar umum untuk warna merah tomat: Hue (0, 20), Saturation 50, Value 50
+    # 2. Thresholding HSV. Rentang melingkar (160, 20) menangkap merah di
+    # kedua ujung Hue (160-179 dan 0-20) sekaligus warna oranye awal.
     candidate_mask = thresholding.threshold_hsv(
         hsv_image=hsv_img,
-        hue_range=(0, 20),
+        hue_range=(160, 20),
         saturation_min=50,
-        value_min=50
+        value_min=50,
     )
 
     # 3. Masking dasar untuk membersihkan area kecil berdasarkan luas minimum
@@ -57,7 +73,7 @@ def segment_tomato(
     # 6. Terapkan mask ke citra asli (background jadi hitam)
     segmented_image = masking.apply_mask(image, final_mask)
 
-    return segmented_image
+    return segmented_image, final_mask, hsv_img
 
 
 def bounding_box(mask: Image.Image) -> tuple[int, int, int, int] | None:

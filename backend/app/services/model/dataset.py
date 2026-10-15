@@ -78,6 +78,11 @@ def build_datasets(data_dir=None, image_size: int = 224, batch_size: int = 32):
             batch_size=batch_size,
             class_mode="categorical",
             shuffle=shuffle,
+            # Paksa urutan kelas mengikuti settings.CLASS_NAMES. Tanpa ini,
+            # Keras mengurutkan nama folder secara alfabetis sehingga
+            # "matang" menjadi indeks 0 dan bertabrakan dengan urutan output
+            # model serta settings.CLASS_NAMES.
+            classes=settings.CLASS_NAMES,
         )
 
     train_dataset = alirkan("train", train_generator, shuffle=True)

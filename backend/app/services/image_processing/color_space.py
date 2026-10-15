@@ -7,9 +7,10 @@ Mengapa HSV dipakai:
 """
 
 from PIL import Image
+import numpy as np
+import cv2
 
-TODO = "Isi image_processing/color_space.py"
-
+# Hapus variabel TODO atau biarkan, lalu implementasikan fungsinya:
 
 def rgb_to_hsv(image: Image.Image) -> Image.Image:
     """Konversi citra RGB menjadi HSV.
@@ -20,7 +21,14 @@ def rgb_to_hsv(image: Image.Image) -> Image.Image:
     Returns:
         Citra HSV dengan Hue 0-179, Saturation 0-255, Value 0-255 (skala OpenCV).
     """
-    raise NotImplementedError(TODO)
+    # Konversi PIL Image (RGB) ke NumPy array
+    img_np = np.array(image)
+    
+    # Konversi RGB ke HSV menggunakan OpenCV
+    hsv_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
+    
+    # Kembalikan kembali ke bentuk PIL Image
+    return Image.fromarray(hsv_np)
 
 
 def hsv_channels(hsv_image: Image.Image) -> tuple[Image.Image, Image.Image, Image.Image]:
@@ -32,4 +40,11 @@ def hsv_channels(hsv_image: Image.Image) -> tuple[Image.Image, Image.Image, Imag
     Returns:
         Tuple berisi tiga citra grayscale: (hue, saturation, value).
     """
-    raise NotImplementedError(TODO)
+    # Konversi PIL Image ke NumPy array
+    hsv_np = np.array(hsv_image)
+    
+    # Pisahkan kanal H, S, V
+    h, s, v = cv2.split(hsv_np)
+    
+    # Ubah masing-masing kanal menjadi PIL Image grayscale
+    return Image.fromarray(h) , Image.fromarray(s), Image.fromarray(v)

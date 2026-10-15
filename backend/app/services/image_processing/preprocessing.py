@@ -9,10 +9,10 @@ Tanggung jawab:
 
 from PIL import Image
 from io import BytesIO
+import numpy as np
+import cv2
 
 from app.core.config import settings
-
-TODO = "Isi image_processing/preprocessing.py"
 
 
 def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
@@ -47,9 +47,17 @@ def resize_image(image: Image.Image, size: int | None = None) -> Image.Image:
     Returns:
         Citra baru dengan ukuran `size` x `size`.
     """
-    raise NotImplementedError(TODO)
+    target_size = size if size is not None else settings.IMAGE_SIZE
+    return image.resize((target_size, target_size))
 
 
 def denoise_image(image: Image.Image) -> Image.Image:
     """Kurangi noise tanpa membuat tepi tomat terlalu kabur."""
-    raise NotImplementedError(TODO)
+    # Konversi PIL Image ke NumPy array
+    img_np = np.array(image)
+    
+    # Menggunakan GaussianBlur ringan untuk mengurangi noise tanpa merusak tepi objek
+    denoised_np = cv2.GaussianBlur(img_np, (3, 3), 0)
+    
+    # Kembalikan ke bentuk PIL Image
+    return Image.fromarray(denoised_np)

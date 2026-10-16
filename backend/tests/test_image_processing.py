@@ -32,9 +32,7 @@ def test_threshold_hsv_rentang_normal():
     hsv[0, 1] = [100, 200, 200]  # di luar rentang
     hsv[0, 2] = [30, 200, 200]   # di luar rentang
 
-    mask = np.array(
-        thresholding.threshold_hsv(Image.fromarray(hsv), (0, 20), 50, 50)
-    )
+    mask = thresholding.threshold_hsv(hsv, (0, 20), 50, 50)
 
     assert mask[0, 0] == 255
     assert mask[0, 1] == 0
@@ -46,9 +44,7 @@ def test_threshold_hsv_rentang_melingkar_menangkap_dua_ujung():
     hsv[0, 0] = [5, 200, 200]    # merah di ujung bawah Hue
     hsv[0, 1] = [175, 200, 200]  # merah di ujung atas Hue
 
-    mask = np.array(
-        thresholding.threshold_hsv(Image.fromarray(hsv), (160, 20), 50, 50)
-    )
+    mask = thresholding.threshold_hsv(hsv, (160, 20), 50, 50)
 
     assert mask[0, 0] == 255
     assert mask[0, 1] == 255
@@ -61,9 +57,9 @@ def test_segmentasi_menemukan_objek_dan_mask():
 
     segmented, mask, hsv = segmentation.segment_tomato_with_mask(citra)
 
-    assert np.count_nonzero(np.array(mask)) > 0
+    assert np.count_nonzero(mask) > 0
     assert segmented.size == citra.size
-    assert hsv.size == citra.size
+    assert hsv.shape[:2] == citra.size[::-1]
 
 
 def test_segment_tomato_mengembalikan_citra_saja():
@@ -88,8 +84,8 @@ def test_analisis_warna_mengisi_statistik():
 
 
 def test_analisis_warna_none_saat_mask_kosong():
-    mask = Image.fromarray(np.zeros((10, 10), dtype=np.uint8))
-    hsv = Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8))
+    mask = np.zeros((10, 10), dtype=np.uint8)
+    hsv = np.zeros((10, 10, 3), dtype=np.uint8)
 
     assert color_analysis.analyze_color(mask, hsv) is None
 
@@ -98,4 +94,4 @@ def test_object_ratio():
     mask = np.zeros((10, 10), dtype=np.uint8)
     mask[:5, :] = 255  # separuh area
 
-    assert color_analysis.object_ratio(Image.fromarray(mask)) == pytest.approx(0.5)
+    assert color_analysis.object_ratio(mask) == pytest.approx(0.5)

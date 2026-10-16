@@ -4,8 +4,10 @@ Tanggung jawab:
 - Membaca bytes gambar (hasil upload frontend) menjadi objek citra.
 - Mengubahnya ke mode RGB.
 - Menyesuaikan ukuran sesuai input model (lihat `settings.IMAGE_SIZE`).
-- Perbaikan ringan: pengurangan noise dan normalisasi pencahayaan.
+- Perbaikan ringan: pengurangan noise (opsional, tidak dipakai pipeline utama).
 """
+
+from __future__ import annotations
 
 from PIL import Image
 from io import BytesIO
@@ -13,6 +15,8 @@ import numpy as np
 import cv2
 
 from app.core.config import settings
+
+__all__ = ["load_image_from_bytes", "denoise_image"]
 
 
 def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
@@ -24,40 +28,22 @@ def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
     Returns:
         Citra RGB dengan ukuran `settings.IMAGE_SIZE` x `settings.IMAGE_SIZE`.
     """
-    # Konversi bytes ke PIL Image
     image = Image.open(BytesIO(image_bytes))
-    
-    # Pastikan mode RGB (jika grayscale atau RGBA)
+
     if image.mode != "RGB":
         image = image.convert("RGB")
-    
-    # Resize sesuai ukuran input model
+
     image = image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
-    
+
     return image
 
 
-def resize_image(image: Image.Image, size: int | None = None) -> Image.Image:
-    """Ubah ukuran citra.
-
-    Args:
-        image: Citra sumber.
-        size: Sisi kuadrat tujuan. Kalau `None`, pakai `settings.IMAGE_SIZE`.
-
-    Returns:
-        Citra baru dengan ukuran `size` x `size`.
-    """
-    target_size = size if size is not None else settings.IMAGE_SIZE
-    return image.resize((target_size, target_size))
-
-
 def denoise_image(image: Image.Image) -> Image.Image:
-    """Kurangi noise tanpa membuat tepi tomat terlalu kabur."""
-    # Konversi PIL Image ke NumPy array
+    """Kurangi noise tanpa membuat tepi tomat terlalu kabur.
+
+    Memakai GaussianBlur ringan (kernel 3x3). Tidak dipakai pipeline utama
+    karena model dilatih tanpa denoise; disediakan untuk eksperimen.
+    """
     img_np = np.array(image)
-    
-    # Menggunakan GaussianBlur ringan untuk mengurangi noise tanpa merusak tepi objek
     denoised_np = cv2.GaussianBlur(img_np, (3, 3), 0)
-    
-    # Kembalikan ke bentuk PIL Image
     return Image.fromarray(denoised_np)

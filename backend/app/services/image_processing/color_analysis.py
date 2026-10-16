@@ -5,30 +5,35 @@ Data ini juga berguna sebagai interpretasi pendukung hasil klasifikasi
 MobileNetV2.
 """
 
-from PIL import Image
+from __future__ import annotations
+
 import numpy as np
 
 from app.schemas.prediction import ColorAnalysis
 
+__all__ = ["analyze_color", "object_ratio"]
 
-def analyze_color(mask: Image.Image, hsv_image: Image.Image) -> ColorAnalysis | None:
+
+def analyze_color(mask: np.ndarray, hsv_array: np.ndarray) -> ColorAnalysis | None:
     """Hitung statistik warna hanya pada area objek tomat.
 
     Args:
-        mask: Mask biner objek tomat dari `segmentation.segment_tomato_with_mask`.
-        hsv_image: Citra HSV yang sudah dipakai saat segmentasi.
+        mask: Mask biner objek tomat dari
+            :func:`segmentation.segment_tomato_with_mask` (array 2-D ``uint8``).
+        hsv_array: Array HSV yang sudah dipakai saat segmentasi, dari
+            :func:`color_space.rgb_to_hsv` (array ``(H, W, 3)`` ``uint8``).
 
     Returns:
-        `ColorAnalysis` berisi Hue, Saturasi, Value, dan rasio area, atau
-        `None` bila mask kosong (tidak ada objek tomat terdeteksi). `None`
-        dipakai pemanggil sebagai sinyal untuk memakai citra asli tanpa
-        segmentasi.
+        :class:`ColorAnalysis` berisi Hue, Saturasi, Value, dan rasio area,
+        atau ``None`` bila mask kosong (tidak ada objek tomat terdeteksi).
+        ``None`` dipakai pemanggil sebagai sinyal untuk memakai citra asli
+        tanpa segmentasi.
     """
-    mask_np = np.array(mask)
-    hsv_np = np.array(hsv_image)
+    mask_np = np.asarray(mask)
+    hsv_np = np.asarray(hsv_array)
 
     # Ambil indeks piksel di mana mask bernilai > 0 (area tomat)
-    tomat_pixels = (mask_np > 0)
+    tomat_pixels = mask_np > 0
 
     if not np.any(tomat_pixels):
         # Mask kosong: tidak ada objek tomat yang terdeteksi.
@@ -43,7 +48,7 @@ def analyze_color(mask: Image.Image, hsv_image: Image.Image) -> ColorAnalysis | 
     mean_s = float(np.mean(s_channel))
     mean_v = float(np.mean(v_channel))
 
-    ratio = object_ratio(mask)
+    ratio = object_ratio(mask_np)
 
     return ColorAnalysis(
         mean_hue=mean_h,
@@ -53,13 +58,13 @@ def analyze_color(mask: Image.Image, hsv_image: Image.Image) -> ColorAnalysis | 
     )
 
 
-def object_ratio(mask: Image.Image) -> float:
+def object_ratio(mask: np.ndarray) -> float:
     """Rasio piksel tomat terhadap seluruh area gambar (0.0-1.0)."""
-    mask_np = np.array(mask)
+    mask_np = np.asarray(mask)
     total_pixels = mask_np.size
-    
+
     if total_pixels == 0:
         return 0.0
-        
+
     tomat_pixel_count = np.count_nonzero(mask_np > 0)
     return float(tomat_pixel_count / total_pixels)

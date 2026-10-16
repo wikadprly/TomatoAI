@@ -79,14 +79,22 @@ def test_build_datasets_augmentasi_hanya_di_train(tf, pohon_dataset):
     gen_train = train_ds.image_data_generator
     assert gen_train.rotation_range == 20
     assert gen_train.shear_range == 0.2
-    assert gen_train.zoom_range == 0.2
+    # Keras 3 menyimpan zoom_range sebagai list [lower, upper] alih-alih float.
+    # float 0.2 menjadi [1-0.2, 1+0.2] = [0.8, 1.2].
+    assert gen_train.zoom_range in (0.2, [0.8, 1.2])
     assert gen_train.horizontal_flip is True
 
     # Val/test: hanya rescale, tanpa augmentasi.
     for ds in (val_ds, test_ds):
         gen = ds.image_data_generator
         assert not gen.shear_range
-        assert not gen.zoom_range
+        # Keras 3 selalu mengisi zoom_range sebagai list (mis. [1.0, 1.0]
+        # untuk "tidak ada zoom"). Cek bahwa rentangnya netral.
+        zr = gen.zoom_range
+        if isinstance(zr, list):
+            assert zr[0] == zr[1]  # tidak ada zoom
+        else:
+            assert not zr
         assert not gen.horizontal_flip
         assert not gen.rotation_range
         assert gen.rescale == pytest.approx(1.0 / 255)

@@ -8,7 +8,10 @@ menormalisasi ke [-1, 1]. Inferensi WAJIB memakai rescale yang sama supaya
 distribusi input cocok dengan bobot hasil training.
 """
 
+from __future__ import annotations
+
 import numpy as np
+from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image
@@ -16,14 +19,17 @@ from PIL import Image
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
 
+__all__ = ["model_is_ready", "load_model", "predict_proba", "predict_label"]
+
 
 def model_is_ready() -> bool:
     """True bila file bobot MobileNetV2 sudah tersedia di disk."""
     return Path(settings.MODEL_PATH).is_file()
 
 
+@lru_cache(maxsize=1)
 def load_model():
-    """Muat model MobileNetV2 yang sudah dilatih.
+    """Muat model MobileNetV2 yang sudah dilatih (di-cache, sekali per proses).
 
     Returns:
         Objek model Keras siap menerima input untuk inferensi.

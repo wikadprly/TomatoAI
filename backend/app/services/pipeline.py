@@ -3,15 +3,18 @@
 Modul ini hanya merangkai urutan tahap. Logika tiap tahap ada di:
 - `services/image_processing/`
 - `services/model/`
+
+Catatan penting: model dilatih pada citra tomat asli (background disertakan,
+hanya rescale 1/255, tanpa denoise maupun segmentasi). Karena itu model
+menerima citra asli yang sudah di-resize, BUKAN hasil segmentasi (background
+hitam). Segmentasi tetap dijalankan untuk menghasilkan `ColorAnalysis` sebagai
+metadata pendukung, namun tidak menggantikan input model.
 """
 
 from app.core.config import settings
 from app.schemas.prediction import PredictionResponse
 from app.services.image_processing.color_analysis import analyze_color
-from app.services.image_processing.preprocessing import (
-    denoise_image,
-    load_image_from_bytes,
-)
+from app.services.image_processing.preprocessing import load_image_from_bytes
 from app.services.image_processing.segmentation import segment_tomato_with_mask
 from app.services.model.predictor import model_is_ready, predict_label
 
@@ -25,10 +28,13 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
 
     Tahapan:
         1. baca & normalisasi ukuran gambar (preprocessing),
-        2. kurangi noise (denoise),
-        3. segmentasi objek tomat (HSV threshold -> mask -> morfologi),
-        4. analisis warna area tomat,
-        5. klasifikasi dengan MobileNetV2.
+        2. segmentasi objek tomat (HSV threshold -> mask -> morfologi),
+        3. analisis warna area tomat (metadata, bukan input model),
+        4. klasifikasi dengan MobileNetV2 pada citra asli (bukan segmentasi).
+
+    Model menerima citra asli yang sudah di-resize ke 224x224 — sama dengan
+    distribusi saat training (citra tomat utuh dengan background). Hasil
+    segmentasi hanya dipakai untuk mengisi ``color_analysis`` pada respons.
 
     Args:
         image_bytes: isi file gambar hasil upload pengguna.
@@ -46,13 +52,12 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
         )
 
     image = load_image_from_bytes(image_bytes)
-    image = denoise_image(image)
 
-    segmented_image, mask, hsv_image = segment_tomato_with_mask(image)
-    color_analysis = analyze_color(mask, hsv_image)
+    # Segmentasi untuk metadata warna. Bila gagal (mask kosong),
+    # color_analysis = None dan model tetap menerima citra asli.
+    _, mask, hsv_array = segment_tomato_with_mask(image)
+    color_analysis = analyze_color(mask, hsv_array)
 
-    # Bila segmentasi gagal (mask kosong), kirim citra asli ke model supaya
-    # tidak menerima gambar hitam semua dan tetap menghasilkan prediksi.
-    model_input = segmented_image if color_analysis is not None else image
-
-    return predict_label(model_input, color_analysis=color_analysis)
+    # Model dilatih pada citra asli (background disertakan), jadi kirim
+    # citra asli, bukan hasil segmentasi yang background-nya hitam.
+    return predict_label(image, color_analysis=color_analysis)

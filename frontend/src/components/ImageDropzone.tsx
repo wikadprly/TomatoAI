@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { predictTomato } from "@/lib/api";
 import { getMockDetection, saveDetectionResult } from "@/lib/storage";
+import { analyzeTomatoClientSide } from "@/lib/clientClassifier";
 
 /** Helper ubah data URL ke File asli */
 function dataURLtoFile(dataurl: string, filename: string): File {
@@ -218,33 +219,42 @@ export default function ImageDropzone() {
     setErrorMessage(null);
 
     try {
+      // 1. Coba kirim ke backend FastAPI port 8000
       const result = await predictTomato(selectedFile);
       saveDetectionResult(result, previewUrl ?? undefined, selectedFile.name);
       router.push("/hasil");
     } catch (err: unknown) {
-      console.error("Gagal melakukan prediksi:", err);
+      console.warn("Backend FastAPI belum aktif di port 8000, memproses otomatis dengan analisis warna citra:", err);
+      // 2. Jika backend offline, analisis piksel foto asli pengguna secara langsung (HSV)
+      if (previewUrl) {
+        try {
+          const clientResult = await analyzeTomatoClientSide(previewUrl);
+          saveDetectionResult(clientResult, previewUrl, selectedFile.name);
+          router.push("/hasil");
+          return;
+        } catch (clientErr) {
+          console.error("Gagal analisis citra lokal:", clientErr);
+        }
+      }
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat memproses gambar.";
       setErrorMessage(
-        `${msg} (Tips: Pastikan backend FastAPI sedang berjalan di port 8000, atau klik tombol simulasi di bawah untuk melanjutkan)`
+        `${msg} (Tips: Pastikan backend FastAPI sedang berjalan di port 8000, atau klik tombol analisis di bawah)`
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSimulateDemo = (forcedLevel?: "matang" | "setengah_matang" | "mentah") => {
-    if (!selectedFile) return;
-    let label: "matang" | "setengah_matang" | "mentah" = "matang";
-    if (forcedLevel) {
-      label = forcedLevel;
-    } else if (selectedFile.name.includes("mentah")) {
-      label = "mentah";
-    } else if (selectedFile.name.includes("setengah")) {
-      label = "setengah_matang";
+  const handleSimulateDemo = async () => {
+    if (!selectedFile || !previewUrl) return;
+    setIsLoading(true);
+    try {
+      const clientResult = await analyzeTomatoClientSide(previewUrl);
+      saveDetectionResult(clientResult, previewUrl, selectedFile.name);
+      router.push("/hasil");
+    } finally {
+      setIsLoading(false);
     }
-    const mock = getMockDetection(label);
-    saveDetectionResult(mock.result, previewUrl ?? undefined, selectedFile.name);
-    router.push("/hasil");
   };
 
   return (

@@ -21,17 +21,28 @@ export default function HasilPage() {
   const [currentRecord, setCurrentRecord] = useState<DetectionRecord | null>(null);
   const [history, setHistory] = useState<DetectionRecord[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     const latest = getLatestDetection();
     const allHistory = getDetectionHistory();
-    setCurrentRecord(latest);
     setHistory(allHistory);
+
+    if (latest) {
+      setCurrentRecord(latest);
+      setIsDemoMode(latest.id.startsWith("mock_"));
+    } else {
+      // Default langsung tampilkan contoh Matang agar tampilan hasil langsung terlihat!
+      const defaultMock = getMockDetection("matang");
+      setCurrentRecord(defaultMock);
+      setIsDemoMode(true);
+    }
   }, []);
 
   const handleSelectRecord = (record: DetectionRecord) => {
     setCurrentRecord(record);
+    setIsDemoMode(record.id.startsWith("mock_"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -39,7 +50,9 @@ export default function HasilPage() {
     const updated = deleteHistoryItem(id);
     setHistory(updated);
     if (currentRecord?.id === id) {
-      setCurrentRecord(updated[0] || null);
+      const nextRecord = updated[0] || getMockDetection("matang");
+      setCurrentRecord(nextRecord);
+      setIsDemoMode(nextRecord.id.startsWith("mock_"));
     }
   };
 
@@ -47,15 +60,17 @@ export default function HasilPage() {
     if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat deteksi?")) {
       clearDetectionHistory();
       setHistory([]);
-      setCurrentRecord(null);
+      const defaultMock = getMockDetection("matang");
+      setCurrentRecord(defaultMock);
+      setIsDemoMode(true);
     }
   };
 
   const handleLoadDemo = (level: MaturityLevel) => {
     const mock = getMockDetection(level);
-    // Simpan ke storage dan perbarui state
     saveDetectionResult(mock.result, undefined, mock.fileName);
     setCurrentRecord(mock);
+    setIsDemoMode(true);
     setHistory(getDetectionHistory());
   };
 
@@ -75,6 +90,7 @@ export default function HasilPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
+      {/* Header & Action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Hasil Klasifikasi"
@@ -86,12 +102,51 @@ export default function HasilPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-[#326446] transition-colors"
           >
             <span>📷</span>
-            <span>Deteksi Baru</span>
+            <span>Mulai Deteksi Tomat</span>
           </Link>
         </div>
       </div>
 
-      {currentRecord ? (
+      {/* Demo Notification Banner */}
+      {isDemoMode && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">💡</span>
+            <div>
+              <p className="font-semibold">Menampilkan Data Sampel Demonstrasi</p>
+              <p className="text-amber-800/90 text-[11px] mt-0.5">
+                Ini adalah data pratinjau agar Anda dapat melihat tampilan visualisasi lengkap sebelum mengunggah foto asli.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-neutral-500 text-[11px]">Pilih sampel:</span>
+            <button
+              type="button"
+              onClick={() => handleLoadDemo("mentah")}
+              className="rounded-md border border-[#D1E7CB] bg-white px-2.5 py-1 font-medium text-[#3F7D58] hover:bg-[#F0F7EE]"
+            >
+              Mentah
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLoadDemo("setengah_matang")}
+              className="rounded-md border border-[#FCE8B0] bg-white px-2.5 py-1 font-medium text-[#B88710] hover:bg-[#FEF9EB]"
+            >
+              1/2 Matang
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLoadDemo("matang")}
+              className="rounded-md border border-[#F8D2D2] bg-white px-2.5 py-1 font-medium text-[#CB5B5B] hover:bg-[#FDF2F2]"
+            >
+              Matang
+            </button>
+          </div>
+        </div>
+      )}
+
+      {currentRecord && (
         <div className="space-y-6">
           {/* Main Hero Result Card */}
           <div className="relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-6 sm:p-8 shadow-xs">
@@ -108,8 +163,14 @@ export default function HasilPage() {
                     />
                   ) : (
                     <div className="text-center p-6 text-neutral-400">
-                      <span className="text-5xl block mb-2">🍅</span>
-                      <p className="text-xs">
+                      <span className="text-5xl block mb-2">
+                        {currentRecord.result.label === "mentah"
+                          ? "🍏"
+                          : currentRecord.result.label === "setengah_matang"
+                          ? "🍊"
+                          : "🍅"}
+                      </span>
+                      <p className="text-xs font-medium text-neutral-500">
                         {currentRecord.fileName || "Foto Deteksi"}
                       </p>
                     </div>
@@ -175,7 +236,7 @@ export default function HasilPage() {
 
           {/* Quick Demo Switcher Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-4 text-xs text-neutral-500">
-            <span>Uji coba sampel klasifikasi:</span>
+            <span>Uji coba sampel klasifikasi lainnya:</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -208,71 +269,6 @@ export default function HasilPage() {
             onDeleteItem={handleDeleteItem}
             onClearAll={handleClearAll}
           />
-        </div>
-      ) : (
-        /* Empty State */
-        <div className="space-y-8">
-          <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-12 text-center shadow-xs">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F0F7EE] text-3xl">
-              🍅
-            </div>
-            <h3 className="mt-4 text-lg font-bold text-neutral-900">
-              Belum Ada Data Hasil Deteksi
-            </h3>
-            <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
-              Anda belum melakukan klasifikasi foto tomat pada sesi ini. Unggah foto
-              melalui halaman Deteksi atau coba sampel data berikut untuk melihat tampilan.
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/deteksi"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#326446] transition-colors"
-              >
-                <span>📷</span>
-                <span>Buka Halaman Deteksi</span>
-              </Link>
-            </div>
-
-            <div className="mt-8 border-t border-neutral-100 pt-6">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">
-                Atau muat contoh hasil untuk demonstrasi:
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleLoadDemo("mentah")}
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:border-[#3F7D58] hover:text-[#3F7D58] transition-colors"
-                >
-                  Contoh Mentah (Hijau)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadDemo("setengah_matang")}
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:border-[#F2C94C] hover:text-[#B88710] transition-colors"
-                >
-                  Contoh Setengah Matang (Kuning/Oranye)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadDemo("matang")}
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:border-[#E85D4A] hover:text-[#CB5B5B] transition-colors"
-                >
-                  Contoh Matang (Merah)
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* History List even when no current record selected */}
-          {history.length > 0 && (
-            <HistoryList
-              history={history}
-              onSelectRecord={handleSelectRecord}
-              onDeleteItem={handleDeleteItem}
-              onClearAll={handleClearAll}
-            />
-          )}
         </div>
       )}
     </div>

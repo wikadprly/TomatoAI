@@ -31,3 +31,11 @@ export type HealthResponse = {
   version: string;
   model_loaded: boolean;
 };
+
+export type DetectionRecord = {
+  id: string;
+  timestamp: string;
+  imageUrl?: string;
+  fileName?: string;
+  result: PredictionResponse;
+};

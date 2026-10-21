@@ -165,19 +165,28 @@ export default function ImageDropzone() {
     setErrorMessage(null);
   };
 
+  // Bind stream kamera ke elemen video saat kamera aktif
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch((err) => console.warn("Video play error:", err));
+    }
+  }, [isCameraActive]);
+
   // Kontrol Webcam
   const startCamera = async () => {
     setErrorMessage(null);
     handleReset();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
       streamRef.current = stream;
       setIsCameraActive(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
     } catch (err) {
       console.error("Gagal membuka kamera:", err);
       setErrorMessage(
@@ -190,6 +199,9 @@ export default function ImageDropzone() {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
   };
@@ -303,12 +315,17 @@ export default function ImageDropzone() {
           <div className="space-y-4">
             <div className="relative mx-auto aspect-4/3 max-w-sm overflow-hidden rounded-xl border border-neutral-300 bg-black shadow-inner">
               <video
-                ref={videoRef}
+                ref={(el) => {
+                  videoRef.current = el;
+                  if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                    el.srcObject = streamRef.current;
+                    el.play().catch((err) => console.warn("Video play error:", err));
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
                 className="h-full w-full object-cover"
-                onLoadedMetadata={() => videoRef.current?.play()}
               />
               <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-0.5 text-[11px] font-medium text-white">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />

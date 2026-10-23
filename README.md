@@ -54,3 +54,14 @@ Confidence Score
 * Mochamad Faqih Ardiansyah
 * Muhammd Syifa'Arkan
 * Wika Dwi Aprilia
+
+---
+## 🛠 Teknologi & Environment
+
+- **Python**: 3.14.6 (supported TF 2.20+ / 2.21+)
+- **TensorFlow**: 2.21.0 (stable, compatible Python 3.12-3.14)
+- **Keras**: 3 (native TF 2.21 format `.keras`)
+- **FastAPI**: Backend API
+- **Next.js**: Frontend framework
+
+**Catatan:** Library ML (`requirements-ml.txt`) sekarang pakai `tensorflow==2.21.0` untuk kompatibilitas lintas Python 3.12-3.14. Jikabutuh training ulang, disarankan gunakan Python 3.12 + TF 2.18 atau Python 3.14 + TF 2.21.

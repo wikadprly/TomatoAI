@@ -59,6 +59,32 @@ POST /api/v1/predict → 500 ModuleNotFoundError: No module named 'tensorflow'
 
 ---
 
+### 1.3 Lingkungan ML tidak reproducible di Python 3.13
+
+`backend/requirements-ml.txt` mem-pin `tensorflow==2.18.0`, sedangkan venv saat
+ini memakai **Python 3.13.14**. TensorFlow 2.18 hanya menyediakan wheel untuk
+Python 3.9–3.12; percobaan instalasi menghasilkan:
+
+```
+ERROR: Could not find a version that satisfies the requirement tensorflow==2.18.0
+       (from versions: 2.20.0rc0, 2.20.0, 2.21.0rc0, 2.21.0, 2.22.0rc0)
+```
+
+- **Dampak:** bagian AI/MobileNetV2 tidak bisa dijalankan di environment saat ini;
+  backend hanya melayani health dan fallback heuristik. Test ML juga di-skip.
+- **Perbaikan yang disarankan:** buat venv baru dengan **Python 3.12**, lalu
+  `pip install -r requirements.txt` + `pip install -r requirements-ml.txt`.
+  Ini paling aman karena sesuai lockfile dan hasil training di notebook.
+- **Alternatif:** tetap di Python 3.13 dan naikkan pin ke `tensorflow==2.20.0`
+  atau `2.21.0`, lalu uji ulang load model + prediksi. Opsi ini mengubah stack
+  (Keras/numpy) sehingga lebih berisiko untuk reproduksibilitas.
+- **Catatan koordinasi:** ini temuan environment, bukan instruksi mengubah repo.
+  Jangan ubah `requirements-ml.txt` sendirian; biarkan tim ML memutuskan apakah
+  tetap di Python 3.12 + TF 2.18 atau pindah ke TF 2.20/2.21. Perbaikan lokal
+  cukup membuat venv Python 3.12 tanpa menyentuh file bersama.
+
+---
+
 ## 🟠 Prioritas 2 — Signifikan
 
 ### 2.1 Segmentasi hanya menangkap merah/jingga
@@ -90,14 +116,76 @@ prediksi berjalan.
 
 ### 2.3 Fallback client-side diam-diam menggantikan hasil AI
 
-`ImageDropzone.handleSubmit`: **semua** error backend (413/415/500/timeout) jatuh ke
-`analyzeTomatoClientSide()`. Fallback ini memang membaca piksel asli untuk HSV, tetapi
-confidence-nya **hardcoded** (0.958 / 0.892 / 0.964) tanpa hubungan dengan citra, dan
-halaman Hasil tetap menampilkan judul *"Distribusi Keyakinan MobileNetV2"*.
+`ImageDropzone.handleSubmit`: error non-validasi (koneksi putus, 500, 503, timeout)
+jatuh ke `analyzeTomatoClientSide()`. Error 400/413/415 sudah dikecualikan dengan
+benar, jadi file yang ditolak server tidak di-fallback. Namun fallback HSV tetap
+memakai confidence **hardcoded** (0.958 / 0.892 / 0.964) tanpa hubungan dengan
+citra, dan halaman Hasil masih menampilkan judul *"Distribusi Keyakinan
+MobileNetV2"*.
 
 - **Dampak:** user tersesat percaya hasil heuristic warna adalah output model.
 - **Perbaikan:** tandai hasil client-side sebagai "heuristik warna (offline)" di
-  response dan di UI; jangan fallback untuk error validasi (413/415).
+  response dan di UI. Bagian validasi 400/413/415 sudah selesai; yang tersisa
+  adalah penandaan UI dan penanganan 500/503.
+
+### 2.4 Hasil demo tersimpan sebagai `source: "model"`
+
+`frontend/src/app/hasil/page.tsx` → `handleLoadDemo()`:
+
+```ts
+saveDetectionResult(mock.result, undefined, mock.fileName);
+```
+
+Argumen keempat (`source`) tidak diisi, sehingga `storage.ts` memakai default
+`"model"`. Saat itu UI masih menampilkan banner demo karena `currentRecord`
+memakai id `mock_*`, tetapi record yang masuk ke `localStorage` ber-id `det_*`
+dan berlabel model. Setelah reload, riwayat menampilkan data sampel sebagai
+hasil MobileNetV2.
+
+- **Dampak:** klaim hasil AI palsu saat presentasi; sulit dibedakan dari
+  prediksi asli.
+- **Perbaikan:** kirim `"demo"` sebagai argumen keempat; pertimbangkan tidak
+  menyimpan demo ke riwayat sama sekali.
+
+### 2.5 Tanda hasil heuristik masih terlalu lembut
+
+Fallback heuristik sekarang hanya mengganti judul kecil di kartu probabilitas.
+Kartu utama tetap menampilkan "Keyakinan" dan deskripsi halaman tetap
+"Evaluasi ... berbasis MobileNetV2". Karena backend tanpa TF membalas 503,
+fallback ini justru jadi jalur utama di mesin saat ini.
+
+- **Dampak:** pengguna/penguji mengira confidence 95% berasal dari CNN.
+- **Perbaikan:** banner kuning besar saat `source === "heuristic"`, ganti istilah
+  "Keyakinan" menjadi "Skor heuristik", dan tampilkan status backend/model.
+
+### 2.6 Format upload frontend dan backend tidak konsisten
+
+`ImageDropzone` menerima `image/*` atau ekstensi `jpg|png|webp|bmp|jfif`,
+sedangkan backend hanya mengizinkan JPEG/PNG/WebP. BMP, JFIF, GIF, atau SVG bisa
+masuk preview lalu ditolak 415. Teks UI juga kontradiktif: "Mendukung semua
+format gambar JPG, PNG, atau WebP".
+
+- **Perbaikan:** samakan `accept` + validasi client dengan allowlist backend,
+  atau konversi semua gambar ke JPEG lewat canvas sebelum dikirim.
+
+### 2.7 "Sampel Tomat" adalah gambar sintetis
+
+`createTomatoCanvas()` menggambar tomat kartun dari gradient di canvas, lalu
+mengirimnya ke model seolah foto asli. Tombolnya berbunyi "coba langsung dengan
+sampel tomat", sehingga menyesatkan. Prediksi MobileNetV2 pada gambar sintetis
+bisa tidak sesuai tombol.
+
+- **Perbaikan:** simpan 3 foto asli dari dataset di `frontend/public/samples/`
+  dan pakai itu; kalau tetap sintetis, beri label "ilustrasi".
+
+### 2.8 Hapus riwayat tidak menghapus hasil terbaru
+
+`clearDetectionHistory()` hanya menghapus key riwayat, tidak menghapus
+`tomatoai_latest_detection`. `deleteHistoryItem()` juga tidak menyentuh latest.
+Akibatnya record yang sudah dihapus bisa muncul lagi setelah reload.
+
+- **Perbaikan:** hapus/ubah `LATEST_STORAGE_KEY` saat clear all atau saat item
+  yang dihapus adalah record terbaru.
 
 ---
 
@@ -145,6 +233,62 @@ provider dan pindahkan halaman ke context, atau hapus file yang tidak dipakai.
 berisi `models/*` (kemungkinan di-add sebelum aturan ignore dibuat). Repo jadi berat;
 seharusnya dibagikan lewat GitHub Release/Drive sesuai komentar di `.gitignore`.
 
+### 3.6 `predictTomato` tanpa timeout
+
+`frontend/src/lib/api.ts` memanggil `fetch` tanpa `AbortController`. Kalau backend
+menerima koneksi tetapi macet saat inferensi, spinner "Memproses dengan AI..."
+bisa berputar tanpa batas.
+
+- **Perbaikan:** timeout 15–30 detik + pesan error yang bisa ditindaklanjuti.
+
+### 3.7 CORS hanya mengizinkan `localhost:3000`
+
+`backend/app/core/config.py` default `CORS_ORIGINS = ["http://localhost:3000"]`.
+Membuka `http://127.0.0.1:3000`, atau Next pindah ke port 3001 karena 3000 sibuk,
+membuat request diblokir CORS lalu jatuh ke fallback heuristik tanpa penjelasan.
+
+- **Perbaikan:** tambahkan origin `127.0.0.1:3000`, dokumentasikan port, atau
+  tampilkan status API di UI.
+
+### 3.8 Responsif navbar dan tombol sampel
+
+Navbar menampilkan logo + 4 link tanpa menu hamburger; pada layar 320–360 px
+berpotensi sesak/overflow. Di halaman Hasil, baris tombol sampel memakai
+`flex items-center gap-2` tanpa `flex-wrap`, sehingga bisa melebar di HP kecil.
+
+- **Perbaikan:** hamburger/drawer untuk mobile, tambahkan `flex-wrap`, dan uji di
+  lebar 320/360/390 px.
+
+### 3.9 Aksesibilitas
+
+- Teks 11–12 px berwarna `text-neutral-400` di atas putih kontrasnya rendah.
+- Tombol hapus ikon di `HistoryList` hanya punya `title`, belum `aria-label`.
+- Baris riwayat bisa diklik tetapi berupa `<div>` tanpa `role`/`tabIndex`/keyboard
+  handler.
+- Loading dan error belum memakai `aria-live`.
+
+**Perbaikan:** naikkan kontras, tambahkan label aksesibel, dan dukung navigasi
+keyboard.
+
+### 3.10 Bar probabilitas 0% tetap tampil 2%
+
+`ProbabilityBar` memakai `Math.max(2, Number(percentage))`, jadi kelas dengan
+probabilitas 0% tetap tergambar sebagai bar kecil. Untuk demo ilmiah, ini bisa
+disalahartikan sebagai probabilitas nonzero.
+
+- **Perbaikan:** biarkan 0% tetap 0 (atau tampilkan garis penanda), angka teks
+  tetap "0.0%".
+
+### 3.11 Alur "Cara Kerja" menyiratkan segmentasi menjadi input model
+
+Halaman Beranda/Tentang menampilkan urutan "Segmentasi objek" lalu "Klasifikasi
+MobileNetV2", sehingga terkesan hasil segmentasi yang dikirim ke model. Pipeline
+aslinya memakai **citra asli yang di-resize** untuk model; segmentasi hanya
+menghasilkan metadata `color_analysis`.
+
+- **Perbaikan:** ubah copy agar eksplisit: "segmentasi untuk analisis warna;
+  MobileNetV2 menerima citra asli." Ini penting saat sidang/presentasi.
+
 ---
 
 ## ✅ Kekuatan yang perlu dipertahankan
@@ -175,6 +319,13 @@ seharusnya dibagikan lewat GitHub Release/Drive sesuai komentar di `.gitignore`.
 | 8 | Perbaiki lint error `hasil/page.tsx` + bersihkan warning unused vars | 🟡 | ✅ Selesai |
 | 9 | Putuskan nasib `prediction-context.tsx` — diputuskan: **hapus** (dead code) | 🟡 | ✅ Selesai |
 | 10 | Untrack file model 9,6 MB dari Git | 🟡 | ⏸️ Ditunda — diputuskan bobot tetap ter-commit |
+| 11 | Perbaiki `source: "demo"` + clear/delete latest detection | 🟠 | ⏳ Belum |
+| 12 | Banner besar untuk hasil heuristik + wording confidence | 🟠 | ⏳ Belum |
+| 13 | Samakan allowlist format upload client/server | 🟠 | ⏳ Belum |
+| 14 | Ganti sampel sintetis dengan foto asli dataset | 🟠 | ⏳ Belum |
+| 15 | Timeout fetch, CORS `127.0.0.1`, responsive navbar/tombol | 🟡 | ⏳ Belum |
+| 16 | Aksesibilitas: kontras, `aria-label`, keyboard, `aria-live` | 🟡 | ⏳ Belum |
+| 17 | Environment ML: Python 3.12 + `tensorflow==2.18.0` | 🔴 | ⏳ Belum |
 
 ### Catatan implementasi (23 Okt 2026)
 

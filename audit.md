@@ -325,7 +325,7 @@ menghasilkan metadata `color_analysis`.
 | 14 | Ganti sampel sintetis dengan foto asli dataset | 🟠 | ⏳ Belum |
 | 15 | Timeout fetch, CORS `127.0.0.1`, responsive navbar/tombol | 🟡 | ⏳ Belum |
 | 16 | Aksesibilitas: kontras, `aria-label`, keyboard, `aria-live` | 🟡 | ⏳ Belum |
-| 17 | Environment ML: Python 3.12 + `tensorflow==2.18.0` | 🔴 | ⏳ Belum |
+| 17 | Environment ML: Python 3.14 + `tensorflow==2.22.0rc0` (Opsi A: upgrade TF) | 🔴 | ✅ Selesaikan upgrade di server |
 
 ### Catatan implementasi (23 Okt 2026)
 

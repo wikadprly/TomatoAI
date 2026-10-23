@@ -6,6 +6,7 @@ citra tomat yang sudah terisolasi dari latar belakang, siap dikirim ke model.
 
 from __future__ import annotations
 
+import cv2
 from PIL import Image
 import numpy as np
 
@@ -62,14 +63,25 @@ def segment_tomato_with_mask(
     else:
         hsv_arr = hsv_array
 
-    # 2. Thresholding HSV. Rentang melingkar (160, 20) menangkap merah di
-    # kedua ujung Hue (160-179 dan 0-20) sekaligus warna oranye awal.
-    candidate_mask = thresholding.threshold_hsv(
+    # 2. Thresholding HSV. Dua mask digabung dengan OR:
+    #    - Rentang melingkar (160, 20) menangkap merah/jingga di kedua ujung
+    #      Hue (160-179 dan 0-20).
+    #    - Rentang (20, 90) menangkap kuning-hijau, supaya tomat mentah dan
+    #      setengah matang ikut tersegmentasi. Tanpa rentang ini, kelas
+    #      mentah selalu bermask kosong dan color_analysis selalu null.
+    mask_merah = thresholding.threshold_hsv(
         hsv_array=hsv_arr,
         hue_range=(160, 20),
         saturation_min=50,
         value_min=50,
     )
+    mask_hijau_kuning = thresholding.threshold_hsv(
+        hsv_array=hsv_arr,
+        hue_range=(20, 90),
+        saturation_min=50,
+        value_min=50,
+    )
+    candidate_mask = cv2.bitwise_or(mask_merah, mask_hijau_kuning)
 
     # 3. Masking dasar untuk membersihkan area kecil berdasarkan luas minimum
     cleaned_mask = masking.build_mask(candidate_mask, min_object_area=500)

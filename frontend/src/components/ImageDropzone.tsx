@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { predictTomato } from "@/lib/api";
-import { getMockDetection, saveDetectionResult } from "@/lib/storage";
+import { ApiError, predictTomato } from "@/lib/api";
+import { saveDetectionResult } from "@/lib/storage";
 import { analyzeTomatoClientSide } from "@/lib/clientClassifier";
 
 /** Helper ubah data URL ke File asli */
@@ -236,12 +236,21 @@ export default function ImageDropzone() {
       saveDetectionResult(result, previewUrl ?? undefined, selectedFile.name);
       router.push("/hasil");
     } catch (err: unknown) {
+      // Request yang DITOLAK server (format salah / file kosong / kebesaran)
+      // tidak boleh jatuh ke fallback heuristik — hasilnya pasti salah dan
+      // user berhak tahu alasannya. Fallback hanya untuk backend yang
+      // benar-benar tidak terjangkau / gagal memproses.
+      if (err instanceof ApiError && [400, 413, 415].includes(err.status)) {
+        setErrorMessage(`${err.message} Silakan perbaiki file lalu coba lagi.`);
+        return;
+      }
+
       console.warn("Backend FastAPI belum aktif di port 8000, memproses otomatis dengan analisis warna citra:", err);
       // 2. Jika backend offline, analisis piksel foto asli pengguna secara langsung (HSV)
       if (previewUrl) {
         try {
           const clientResult = await analyzeTomatoClientSide(previewUrl);
-          saveDetectionResult(clientResult, previewUrl, selectedFile.name);
+          saveDetectionResult(clientResult, previewUrl, selectedFile.name, "heuristic");
           router.push("/hasil");
           return;
         } catch (clientErr) {
@@ -262,7 +271,7 @@ export default function ImageDropzone() {
     setIsLoading(true);
     try {
       const clientResult = await analyzeTomatoClientSide(previewUrl);
-      saveDetectionResult(clientResult, previewUrl, selectedFile.name);
+      saveDetectionResult(clientResult, previewUrl, selectedFile.name, "heuristic");
       router.push("/hasil");
     } finally {
       setIsLoading(false);

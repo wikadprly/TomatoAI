@@ -118,7 +118,6 @@ export async function analyzeTomatoClientSide(
 
         if (meanHue >= 30 && meanHue <= 90) {
           label = "mentah";
-          const conf = 0.958;
           probabilities = {
             mentah: 0.958,
             setengah_matang: 0.034,
@@ -126,7 +125,6 @@ export async function analyzeTomatoClientSide(
           };
         } else if (meanHue >= 14 && meanHue < 30) {
           label = "setengah_matang";
-          const conf = 0.892;
           probabilities = {
             mentah: 0.043,
             setengah_matang: 0.892,
@@ -134,7 +132,6 @@ export async function analyzeTomatoClientSide(
           };
         } else {
           label = "matang";
-          const conf = 0.964;
           probabilities = {
             mentah: 0.006,
             setengah_matang: 0.03,

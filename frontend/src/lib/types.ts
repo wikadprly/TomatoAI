@@ -32,10 +32,21 @@ export type HealthResponse = {
   model_loaded: boolean;
 };
 
+/**
+ * Asal sebuah hasil deteksi.
+ *
+ * - `model`      = output MobileNetV2 asli dari backend FastAPI.
+ * - `heuristic`  = analisis warna HSV sederhana di browser
+ *                   (dipakai saat backend offline; confidence di-hardcode).
+ * - `demo`       = data sampel statis untuk pratinjau tampilan.
+ */
+export type DetectionSource = "model" | "heuristic" | "demo";
+
 export type DetectionRecord = {
   id: string;
   timestamp: string;
   imageUrl?: string;
   fileName?: string;
   result: PredictionResponse;
+  source?: DetectionSource;
 };

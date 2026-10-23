@@ -19,12 +19,33 @@ from PIL import Image
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
 
-__all__ = ["model_is_ready", "load_model", "predict_proba", "predict_label"]
+__all__ = [
+    "model_is_ready",
+    "tensorflow_available",
+    "load_model",
+    "predict_proba",
+    "predict_label",
+]
 
 
 def model_is_ready() -> bool:
     """True bila file bobot MobileNetV2 sudah tersedia di disk."""
     return Path(settings.MODEL_PATH).is_file()
+
+
+@lru_cache(maxsize=1)
+def tensorflow_available() -> bool:
+    """True bila TensorFlow bisa diimpor di environment ini.
+
+    Dipakai ``/api/v1/health`` supaya ``model_loaded`` tidak sekadar menguji
+    keberadaan file bobot, tetapi juga ketersediaan runtime ML yang
+    dibutuhkan ``load_model``. Hasilnya di-cache (sekali per proses).
+    """
+    try:
+        import tensorflow  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
 @lru_cache(maxsize=1)

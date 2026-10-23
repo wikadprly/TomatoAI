@@ -68,7 +68,9 @@ def _build_model(num_classes: int = 3, image_size: int = 224) -> Any:
         name="predictions",
     )(x)
 
-    model = Model(inputs=base.input, outputs=x, name="mobilenetv2_tomat")
+    # Output WAJIB `outputs` (layer softmax 3 kelas) — bukan `x` yang masih
+    # berupa vektor fitur 1280-dim hasil dropout.
+    model = Model(inputs=base.input, outputs=outputs, name="mobilenetv2_tomat")
 
     # Compile dengan Adam dan categorical_crossentropy
     model.compile(
@@ -86,15 +88,19 @@ def _unfreeze_top_layers(model: Any, n_layers: int = 30) -> None:
         model: Model yang sudah dibangun
         n_layers: Jumlah layer dari belakang yang di-unfreeze
     """
+    from tensorflow.keras.layers import BatchNormalization
+
     # Cari base model (layer pertama biasanya base MobileNetV2)
     base = model.layers[0]
     if hasattr(base, "layers"):
         # Unfreeze top n_layers
         for layer in base.layers[-n_layers:]:
             layer.trainable = True
-        # Pastikan BatchNorm tetap dalam inference mode (best practice)
+        # BatchNorm harus tetap inference mode saat fine-tuning (best
+        # practice). Cek dengan isinstance terhadap kelasnya — versi lama
+        # memakai `isinstance(layer, type)` yang selalu False untuk instance.
         for layer in base.layers:
-            if isinstance(layer, type) and "BatchNormalization" in layer.__class__.__name__:
+            if isinstance(layer, BatchNormalization):
                 layer.trainable = False
 
 

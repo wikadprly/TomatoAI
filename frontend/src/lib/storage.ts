@@ -3,17 +3,28 @@
  * untuk menyimpan hasil deteksi terkini dan riwayat deteksi pengguna.
  */
 
-import type { DetectionRecord, MaturityLevel, PredictionResponse } from "./types";
+import type {
+  DetectionRecord,
+  DetectionSource,
+  MaturityLevel,
+  PredictionResponse,
+} from "./types";
 
 const LATEST_STORAGE_KEY = "tomatoai_latest_detection";
 const HISTORY_STORAGE_KEY = "tomatoai_detection_history";
 const MAX_HISTORY_ITEMS = 10;
 
-/** Simpan hasil deteksi terbaru dan tambahkan ke riwayat. */
+/**
+ * Simpan hasil deteksi terbaru dan tambahkan ke riwayat.
+ *
+ * `source` menandai asal hasil (model backend / heuristic browser / demo)
+ * supaya UI bisa menampilkannya dengan jujur — default "model".
+ */
 export function saveDetectionResult(
   result: PredictionResponse,
   imageUrl?: string,
-  fileName?: string
+  fileName?: string,
+  source: DetectionSource = "model",
 ): DetectionRecord {
   const record: DetectionRecord = {
     id: `det_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -21,6 +32,7 @@ export function saveDetectionResult(
     imageUrl,
     fileName: fileName || "Foto Tomat",
     result,
+    source,
   };
 
   if (typeof window !== "undefined") {
@@ -180,6 +192,7 @@ export function getMockDetection(level: MaturityLevel = "matang"): DetectionReco
     id: `mock_${level}_${Date.now()}`,
     timestamp: new Date().toISOString(),
     fileName: `sample_tomat_${level}.jpg`,
+    source: "demo",
     result: {
       label: level,
       confidence: selected.confidence,

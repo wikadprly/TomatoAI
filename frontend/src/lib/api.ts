@@ -10,6 +10,23 @@ import type { HealthResponse, PredictionResponse } from "./types";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+/**
+ * Error dari API yang membawa HTTP status code asli.
+ *
+ * Pemanggil perlu membedakan "backend mati/tidak terjangkau" (layak
+ * fallback) dengan "request ditolak server" (413/415 — TIDAK boleh
+ * fallback karena hasilnya pasti salah).
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 /** Ambil pesan error dari response FastAPI (field `detail`). */
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -30,7 +47,7 @@ export async function getHealth(): Promise<HealthResponse> {
   });
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    throw new ApiError(await readErrorMessage(response), response.status);
   }
 
   return (await response.json()) as HealthResponse;
@@ -52,7 +69,7 @@ export async function predictTomato(file: File): Promise<PredictionResponse> {
   });
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response));
+    throw new ApiError(await readErrorMessage(response), response.status);
   }
 
   return (await response.json()) as PredictionResponse;

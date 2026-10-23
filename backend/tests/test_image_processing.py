@@ -62,6 +62,28 @@ def test_segmentasi_menemukan_objek_dan_mask():
     assert hsv.shape[:2] == citra.size[::-1]
 
 
+def _buat_gambar_lingkaran_warna(warna, size: int = 224) -> Image.Image:
+    """Citra uji: lingkaran berwarna tertentu di atas latar abu-abu terang."""
+    citra = Image.new("RGB", (size, size), (240, 240, 240))
+    gambar = ImageDraw.Draw(citra)
+    margin = size // 4
+    gambar.ellipse([margin, margin, size - margin, size - margin], fill=warna)
+    return citra
+
+
+def test_segmentasi_menangkap_tomat_hijau_dan_kuning():
+    """Tomat mentah (hijau) dan setengah matang (kuning) harus ikut
+    tersegmentasi — bukan hanya merah/jingga seperti versi lama."""
+    for warna in [(60, 160, 60), (230, 210, 60)]:
+        citra = _buat_gambar_lingkaran_warna(warna)
+
+        _, mask, hsv = segmentation.segment_tomato_with_mask(citra)
+
+        assert np.count_nonzero(mask) > 0, f"warna {warna} tidak tersegmentasi"
+        hasil = color_analysis.analyze_color(mask, hsv)
+        assert hasil is not None
+
+
 def test_segment_tomato_mengembalikan_citra_saja():
     citra = _buat_gambar_lingkaran_merah()
 

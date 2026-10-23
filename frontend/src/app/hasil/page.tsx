@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import MaturityBadge, { getMaturityDescription } from "@/components/MaturityBadge";
@@ -18,31 +18,30 @@ import {
 import type { DetectionRecord, MaturityLevel } from "@/lib/types";
 
 export default function HasilPage() {
-  const [currentRecord, setCurrentRecord] = useState<DetectionRecord | null>(null);
-  const [history, setHistory] = useState<DetectionRecord[]>([]);
-  const [isClient, setIsClient] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  // Data diinisialisasi langsung dari localStorage via lazy initializer
+  // (bukan lewat setState di dalam effect — dilarang react-hooks/
+  // set-state-in-effect). render awal aman karena diblokir isClient di bawah.
+  const [stored] = useState(() => getLatestDetection());
+  const [history, setHistory] = useState<DetectionRecord[]>(() =>
+    getDetectionHistory()
+  );
+  const [currentRecord, setCurrentRecord] = useState<DetectionRecord | null>(
+    () => stored ?? getMockDetection("matang")
+  );
 
-  useEffect(() => {
-    setIsClient(true);
-    const latest = getLatestDetection();
-    const allHistory = getDetectionHistory();
-    setHistory(allHistory);
+  // True hanya di browser; dipakai untuk menunda render yang membaca
+  // localStorage supaya tidak terjadi hydration mismatch dengan HTML server.
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
-    if (latest) {
-      setCurrentRecord(latest);
-      setIsDemoMode(latest.id.startsWith("mock_"));
-    } else {
-      // Default langsung tampilkan contoh Matang agar tampilan hasil langsung terlihat!
-      const defaultMock = getMockDetection("matang");
-      setCurrentRecord(defaultMock);
-      setIsDemoMode(true);
-    }
-  }, []);
+  // isDemoMode cukup diturunkan dari id record, tidak perlu state tersendiri.
+  const isDemoMode = currentRecord?.id.startsWith("mock_") ?? false;
 
   const handleSelectRecord = (record: DetectionRecord) => {
     setCurrentRecord(record);
-    setIsDemoMode(record.id.startsWith("mock_"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -50,9 +49,7 @@ export default function HasilPage() {
     const updated = deleteHistoryItem(id);
     setHistory(updated);
     if (currentRecord?.id === id) {
-      const nextRecord = updated[0] || getMockDetection("matang");
-      setCurrentRecord(nextRecord);
-      setIsDemoMode(nextRecord.id.startsWith("mock_"));
+      setCurrentRecord(updated[0] || getMockDetection("matang"));
     }
   };
 
@@ -60,9 +57,7 @@ export default function HasilPage() {
     if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat deteksi?")) {
       clearDetectionHistory();
       setHistory([]);
-      const defaultMock = getMockDetection("matang");
-      setCurrentRecord(defaultMock);
-      setIsDemoMode(true);
+      setCurrentRecord(getMockDetection("matang"));
     }
   };
 
@@ -70,7 +65,6 @@ export default function HasilPage() {
     const mock = getMockDetection(level);
     saveDetectionResult(mock.result, undefined, mock.fileName);
     setCurrentRecord(mock);
-    setIsDemoMode(true);
     setHistory(getDetectionHistory());
   };
 
@@ -220,7 +214,11 @@ export default function HasilPage() {
                 {/* Probabilities Breakdown */}
                 <div className="rounded-xl border border-neutral-100 bg-neutral-50/70 p-4">
                   <h4 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
-                    Distribusi Keyakinan MobileNetV2
+                    {currentRecord.source === "heuristic"
+                      ? "Distribusi Keyakinan — Heuristik Warna (Browser, Offline)"
+                      : currentRecord.source === "demo"
+                        ? "Distribusi Keyakinan — Data Sampel Demo"
+                        : "Distribusi Keyakinan MobileNetV2"}
                   </h4>
                   <ProbabilityBar
                     probabilities={currentRecord.result.probabilities}

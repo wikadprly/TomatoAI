@@ -58,15 +58,36 @@ export async function getHealth(): Promise<HealthResponse> {
  *
  * Endpoint ini akan mengembalikan 503 sampai bobot model tersedia
  * MobileNetV2, jadi pemanggil harus siap menangani error.
+ *
+ * Request diberi batas waktu 30 detik lewat AbortController supaya spinner
+ * "Memproses dengan AI..." tidak berputar tanpa batas bila backend menerima
+ * koneksi tetapi macet saat inferensi.
  */
 export async function predictTomato(file: File): Promise<PredictionResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/predict`, {
-    method: "POST",
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/v1/predict`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(
+        "Backend tidak merespons dalam 30 detik. Pastikan server berjalan di port 8000.",
+        408
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new ApiError(await readErrorMessage(response), response.status);

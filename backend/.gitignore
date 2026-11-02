@@ -27,6 +27,8 @@ Thumbs.db
 # Model sebaiknya dibagikan lewat Google Drive atau GitHub Release.
 models/*
 !models/.gitkeep
+# Metrik hasil evaluasi ikut ter-commit (file kecil, JSON)
+!models/metrics.json
 
 # Dataset
 # Dataset photo tomat juga terlalu besar untuk Git.

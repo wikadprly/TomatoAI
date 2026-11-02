@@ -4,6 +4,8 @@ Model dan dataset ditiru supaya metrik bisa diuji tanpa bobot asli.
 Membutuhkan scikit-learn; di mesin tanpa itu test di-skip otomatis.
 """
 
+import json
+
 import pytest
 
 pytest.importorskip("sklearn", reason="scikit-learn tidak terpasang")
@@ -82,3 +84,22 @@ def test_classification_report_memuat_nama_kelas():
 
     for nama in ("mentah", "setengah_matang", "matang"):
         assert nama in laporan
+
+
+def test_export_metrics_tulis_json_valid(tmp_path):
+    """export_metrics harus menulis metrics.json dengan struktur lengkap."""
+    classes = [0, 1, 2, 0]
+    out = tmp_path / "metrics.json"
+
+    path = evaluation.export_metrics(
+        ModelTiruan(_one_hot(classes)), DatasetTiruan(classes), path=out
+    )
+
+    assert path == str(out)
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["metrics"]["accuracy"] == 1.0
+    assert data["test_set_size"] == 4
+    assert data["class_names"] == ["mentah", "setengah_matang", "matang"]
+    assert len(data["confusion_matrix"]) == 3
+    assert data["generated_at"]  # terisi timestamp
+    assert "mentah" in data["classification_report"]

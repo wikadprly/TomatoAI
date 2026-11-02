@@ -37,8 +37,11 @@ export default function HasilPage() {
     () => false
   );
 
-  // isDemoMode cukup diturunkan dari id record, tidak perlu state tersendiri.
-  const isDemoMode = currentRecord?.id.startsWith("mock_") ?? false;
+  // isDemoMode diturunkan dari sumber record ("demo") — id mock_ juga
+  // dicakup untuk record lama — supaya banner tetap muncul setelah reload.
+  const isDemoMode = currentRecord
+    ? currentRecord.source === "demo" || currentRecord.id.startsWith("mock_")
+    : false;
 
   const handleSelectRecord = (record: DetectionRecord) => {
     setCurrentRecord(record);
@@ -63,7 +66,9 @@ export default function HasilPage() {
 
   const handleLoadDemo = (level: MaturityLevel) => {
     const mock = getMockDetection(level);
-    saveDetectionResult(mock.result, undefined, mock.fileName);
+    // Argumen keempat "demo" wajib diisi — tanpa itu record yang tersimpan
+    // berlabel "model" dan riwayat menampilkan data sampel sebagai hasil AI.
+    saveDetectionResult(mock.result, undefined, mock.fileName, "demo");
     setCurrentRecord(mock);
     setHistory(getDetectionHistory());
   };
@@ -75,7 +80,7 @@ export default function HasilPage() {
           title="Hasil Klasifikasi"
           description="Memuat data klasifikasi tingkat kematangan tomat..."
         />
-        <div className="animate-pulse rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-400">
+        <div className="animate-pulse rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-500">
           Memuat hasil...
         </div>
       </div>
@@ -88,7 +93,11 @@ export default function HasilPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Hasil Klasifikasi"
-          description="Evaluasi tingkat kematangan berbasis MobileNetV2 dan Pengolahan Citra HSV."
+          description={
+            currentRecord?.source === "heuristic"
+              ? "Hasil analisis warna heuristik yang dijalankan di browser — MobileNetV2 tidak dijalankan."
+              : "Evaluasi tingkat kematangan berbasis MobileNetV2 dan Pengolahan Citra HSV."
+          }
         />
         <div className="flex items-center gap-2">
           <Link
@@ -100,6 +109,25 @@ export default function HasilPage() {
           </Link>
         </div>
       </div>
+
+      {/* Heuristic (offline) Notification Banner */}
+      {currentRecord?.source === "heuristic" && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-300 bg-amber-100/80 p-4 text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs"
+        >
+          <span className="text-base">⚠️</span>
+          <div>
+            <p className="font-semibold">
+              Hasil Heuristik Warna (Browser, Offline) — Bukan Output AI
+            </p>
+            <p className="text-amber-800/90 text-[11px] mt-0.5">
+              Backend MobileNetV2 tidak terjangkau, sehingga angka di bawah
+              dihitung secara lokal dari analisis warna HSV di browser Anda.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Demo Notification Banner */}
       {isDemoMode && (
@@ -113,7 +141,7 @@ export default function HasilPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <span className="text-neutral-500 text-[11px]">Pilih sampel:</span>
             <button
               type="button"
@@ -174,7 +202,7 @@ export default function HasilPage() {
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between w-full max-w-sm text-xs text-neutral-400 px-1">
+                <div className="mt-2.5 flex items-center justify-between w-full max-w-sm text-xs text-neutral-500 px-1">
                   <span className="truncate max-w-[200px]">
                     {currentRecord.fileName || "Foto Tomat"}
                   </span>
@@ -192,7 +220,7 @@ export default function HasilPage() {
               <div className="md:col-span-7 flex flex-col justify-center space-y-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                       Tingkat Kematangan Terdeteksi
                     </span>
                   </div>
@@ -202,7 +230,10 @@ export default function HasilPage() {
                       {currentRecord.result.label.replace("_", " ")}
                     </h2>
                     <span className="text-sm font-semibold text-[#3F7D58]">
-                      {(currentRecord.result.confidence * 100).toFixed(1)}% Keyakinan
+                      {(currentRecord.result.confidence * 100).toFixed(1)}%
+                      {currentRecord.source === "heuristic"
+                        ? " Skor Heuristik"
+                        : " Keyakinan"}
                     </span>
                   </div>
 
@@ -234,7 +265,7 @@ export default function HasilPage() {
 
           {/* Quick Demo Switcher Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-4 text-xs text-neutral-500">
-            <span>Uji coba sampel klasifikasi lainnya:</span>
+            <span>Uji coba sampel klasifikasi lainnya (ilustrasi):</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"

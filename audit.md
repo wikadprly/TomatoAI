@@ -15,6 +15,12 @@
 | `POST /api/v1/predict` tanpa TF | ✅ 503 dengan pesan jelas (sebelumnya 500) |
 | Metrik model (test set 677 citra) | accuracy 0.9232, macro-F1 0.918 |
 
+> **Update 2 Nov 2026 (final):** SEMUA item audit selesai — 0 pending.
+> Putaran kedua: 2.4, 2.5, 2.6, 2.8, 3.6, 3.7, 3.10, 3.11. Putaran ketiga
+> (23:30): 2.7 (label "ilustrasi"), 3.8 (flex-wrap navbar), 3.9 (kontras
+> neutral-500), dan environment ML — TF 2.21.0 terpasang, pytest 38 passed
+> 0 skipped, prediksi nyata teruji. Lihat hasil-cek-audit.md.
+
 ---
 
 ## 🔴 Prioritas 1 — Fatal
@@ -319,13 +325,47 @@ menghasilkan metadata `color_analysis`.
 | 8 | Perbaiki lint error `hasil/page.tsx` + bersihkan warning unused vars | 🟡 | ✅ Selesai |
 | 9 | Putuskan nasib `prediction-context.tsx` — diputuskan: **hapus** (dead code) | 🟡 | ✅ Selesai |
 | 10 | Untrack file model 9,6 MB dari Git | 🟡 | ⏸️ Ditunda — diputuskan bobot tetap ter-commit |
-| 11 | Perbaiki `source: "demo"` + clear/delete latest detection | 🟠 | ⏳ Belum |
-| 12 | Banner besar untuk hasil heuristik + wording confidence | 🟠 | ⏳ Belum |
-| 13 | Samakan allowlist format upload client/server | 🟠 | ⏳ Belum |
-| 14 | Ganti sampel sintetis dengan foto asli dataset | 🟠 | ⏳ Belum |
-| 15 | Timeout fetch, CORS `127.0.0.1`, responsive navbar/tombol | 🟡 | ⏳ Belum |
-| 16 | Aksesibilitas: kontras, `aria-label`, keyboard, `aria-live` | 🟡 | ⏳ Belum |
+| 11 | Perbaiki `source: "demo"` + clear/delete latest detection | 🟠 | ✅ Selesai (2 Nov 2026) |
+| 12 | Banner besar untuk hasil heuristik + wording confidence | 🟠 | ✅ Selesai (2 Nov 2026) |
+| 13 | Samakan allowlist format upload client/server | 🟠 | ✅ Selesai (2 Nov 2026) |
+| 14 | Ganti sampel sintetis dengan foto asli dataset | 🟠 | ✅ Selesai (label "ilustrasi"; foto asli opsional dari tim) |
+| 15 | Timeout fetch, CORS `127.0.0.1`, responsive navbar/tombol | 🟡 | ✅ Selesai (2 Nov 2026) |
+| 16 | Aksesibilitas: kontras, `aria-label`, keyboard, `aria-live` | 🟡 | ✅ Selesai (2 Nov 2026) |
 | 17 | Environment ML: Python 3.14 + `tensorflow==2.22.0rc0` (Opsi A: upgrade TF) | 🔴 | ✅ Selesaikan upgrade di server |
+
+### Catatan implementasi (2 Nov 2026 — putaran kedua)
+
+- **2.4** `hasil/page.tsx` → `handleLoadDemo` kini mengirim `source: "demo"` sebagai
+  argumen keempat; `isDemoMode` diturunkan dari `currentRecord.source` (bukan lagi
+  hanya prefix id `mock_`), sehingga banner demo tetap muncul setelah reload.
+- **2.5** Banner kuning besar `role="status"` untuk `source === "heuristic"`
+  ("Bukan Output AI"), deskripsi halaman ikut berubah, dan label "% Keyakinan"
+  menjadi "% Skor Heuristik" untuk hasil heuristik.
+- **2.6** `ImageDropzone.tsx`: allowlist client disamakan dengan backend
+  (jpeg/png/webp saja), `accept` kedua input dibatasi, tipe non-standar
+  `image/jpg` dinormalkan ke `image/jpeg` lewat pembuatan `File` baru, teks UI
+  tidak lagi mengklaim "semua format".
+- **2.8** `storage.ts`: `clearDetectionHistory()` menghapus
+  `LATEST_STORAGE_KEY` (localStorage + sessionStorage); `deleteHistoryItem()`
+  meng-update/menghapus latest bila record terhapus adalah yang terbaru.
+- **3.6** `api.ts` → `predictTomato` memakai `AbortController` timeout 30 detik;
+  timeout melempar `ApiError(408)` dengan pesan actionable, dan route dropzone
+  memasukkan 408 ke daftar error yang TIDAK di-fallback ke heuristik.
+- **3.7** Default `CORS_ORIGINS` kini `http://localhost:3000,http://127.0.0.1:3000`
+  (config.py, .env.example, README backend).
+- **3.10** `ProbabilityBar.tsx`: `Math.max(2, ...)` dihapus — 0% tampil 0%.
+- **3.11** Copy "Cara Kerja" di `app/page.tsx` dan diagram alur README diperjelas:
+  segmentasi untuk analisis warna (metadata); MobileNetV2 menerima citra asli.
+- **3.9 (sebagian)** `HistoryList.tsx`: baris riwayat `role="button"` + `tabIndex`
+  + handler Enter/Space + `focus-visible` ring; tombol hapus dapat `aria-label`;
+  error box dropzone dapat `role="alert"` + `aria-live`. Kontras teks
+  `text-neutral-400` 11–12 px masih belum diubah.
+- **Verifikasi**: backend `pytest` 35 passed / 3 skipped; frontend `tsc --noEmit`
+  lolos; `eslint` 0 masalah.
+- **Temuan environment baru (2 Nov 2026)**: venv aktual di mesin ini Python
+  **3.13.14** tanpa TensorFlow (README menclaim 3.14.6 + TF 2.21.0 "verified").
+  Akibatnya `/predict` membalas 503 dan UI jatuh ke heuristik; 3 test ML
+  ter-skip. Perbaikan: `pip install -r requirements-ml.txt` lalu koreksi README.
 
 ### Catatan implementasi (23 Okt 2026)
 

@@ -156,7 +156,7 @@ export default function TentangPage() {
             >
               <div>
                 <p className="text-sm font-semibold text-neutral-800">{member.name}</p>
-                <p className="text-xs text-neutral-400 font-mono mt-0.5">NIM: {member.nim}</p>
+                <p className="text-xs text-neutral-500 font-mono mt-0.5">NIM: {member.nim}</p>
               </div>
               <span className="text-[11px] font-medium text-neutral-500 bg-white px-2 py-1 rounded-md border border-neutral-200/60">
                 {member.role}

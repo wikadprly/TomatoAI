@@ -19,9 +19,9 @@ export default function HistoryList({
 }: HistoryListProps) {
   if (history.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-sm text-neutral-400">
+      <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
         <p>Belum ada riwayat deteksi yang tersimpan di perangkat ini.</p>
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="mt-1 text-xs text-neutral-500">
           Setiap deteksi yang Anda lakukan akan otomatis tersimpan di sini secara lokal.
         </p>
       </div>
@@ -62,8 +62,17 @@ export default function HistoryList({
               className="flex items-center justify-between py-3.5 hover:bg-neutral-50/70 -mx-2 px-2 rounded-lg transition-colors"
             >
               <div
-                className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0 mr-3"
+                role="button"
+                tabIndex={0}
+                aria-label={`Buka hasil deteksi ${item.fileName || "Foto Tomat"}`}
+                className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0 mr-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3F7D58] rounded-lg"
                 onClick={() => onSelectRecord(item)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectRecord(item);
+                  }
+                }}
               >
                 {item.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -84,7 +93,7 @@ export default function HistoryList({
                     </p>
                     <MaturityBadge level={item.result.label} size="sm" />
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-400">
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-500">
                     <span>{dateStr}</span>
                     <span>•</span>
                     <span>Keyakinan: {(item.result.confidence * 100).toFixed(1)}%</span>
@@ -106,8 +115,9 @@ export default function HistoryList({
                     e.stopPropagation();
                     onDeleteItem(item.id);
                   }}
-                  className="rounded-md p-1 text-neutral-400 hover:text-red-500 hover:bg-neutral-100"
+                  className="rounded-md p-1 text-neutral-500 hover:text-red-500 hover:bg-neutral-100"
                   title="Hapus deteksi ini"
+                  aria-label={`Hapus deteksi ${item.fileName || "Foto Tomat"}`}
                 >
                   <svg
                     className="h-4 w-4"

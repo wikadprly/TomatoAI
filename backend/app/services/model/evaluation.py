@@ -7,6 +7,10 @@ Urutan sampel pada test set harus sejajar dengan labelnya, karena itu
 `dataset.build_datasets` memakai `shuffle=False` untuk val/test.
 """
 
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
 import numpy as np
 
 from app.core.config import settings
@@ -107,3 +111,48 @@ def classification_report(model, test_dataset) -> str:
         digits=4,
         zero_division=0,
     )
+
+
+def export_metrics(model, test_dataset, path: Path | str | None = None) -> str:
+    """Hitung metrik penuh pada test set lalu tulis ke ``metrics.json``.
+
+    File ini adalah "hasil training dalam bentuk JSON": metrik + confusion
+    matrix + laporan per kelas, lengkap dengan metadata model. Dipakai untuk
+    dokumentasi laporan/README dan untuk memverifikasi model yang dideploy
+    tanpa membuka notebook training.
+
+    Args:
+        model: Model MobileNetV2 yang sudah dilatih.
+        test_dataset: Dataset uji dari ``dataset.build_datasets``.
+        path: Lokasi keluaran. Default: ``<folder model>/metrics.json``.
+
+    Returns:
+        Path file metrics.json yang tersimpan.
+    """
+    if path is None:
+        path = Path(settings.MODEL_PATH).parent / "metrics.json"
+    path = Path(path)
+
+    payload = {
+        "model": str(settings.MODEL_PATH),
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "image_size": settings.IMAGE_SIZE,
+        "class_names": list(settings.CLASS_NAMES),
+        "test_set_size": int(len(getattr(test_dataset, "classes", []))),
+        "metrics": evaluate(model, test_dataset),
+        "confusion_matrix": confusion_matrix(model, test_dataset),
+        "confusion_matrix_labels": {
+            "rows": "label_sebenarnya",
+            "columns": "prediksi",
+            "order": list(settings.CLASS_NAMES),
+        },
+        "classification_report": classification_report(model, test_dataset),
+    }
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Metrik disimpan ke: {path}")
+    return str(path)

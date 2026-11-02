@@ -109,6 +109,10 @@ export function clearDetectionHistory(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(HISTORY_STORAGE_KEY);
+    // Latest detection ikut dihapus — kalau tidak, record yang sudah di-
+    // clear akan muncul lagi sebagai hasil terbaru setelah reload.
+    localStorage.removeItem(LATEST_STORAGE_KEY);
+    sessionStorage.removeItem(LATEST_STORAGE_KEY);
   } catch (e) {
     console.error("Gagal menghapus riwayat:", e);
   }
@@ -120,6 +124,22 @@ export function deleteHistoryItem(id: string): DetectionRecord[] {
   try {
     const history = getDetectionHistory().filter((item) => item.id !== id);
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+
+    // Bila item yang dihapus adalah record terbaru, latest juga harus ikut
+    // dihapus/diupdate — supaya record terhapus tidak muncul lagi setelah
+    // reload (sessionStorage & localStorage).
+    const latest = getLatestDetection();
+    if (latest?.id === id) {
+      const next = history[0];
+      if (next) {
+        localStorage.setItem(LATEST_STORAGE_KEY, JSON.stringify(next));
+        sessionStorage.setItem(LATEST_STORAGE_KEY, JSON.stringify(next));
+      } else {
+        localStorage.removeItem(LATEST_STORAGE_KEY);
+        sessionStorage.removeItem(LATEST_STORAGE_KEY);
+      }
+    }
+
     return history;
   } catch (e) {
     console.error("Gagal menghapus item riwayat:", e);

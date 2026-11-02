@@ -29,15 +29,15 @@ const steps = [
   },
   {
     step: "2",
-    title: "Segmentasi objek",
+    title: "Segmentasi & analisis warna",
     description:
-      "Pengolahan citra memisahkan tomat dari latar belakang memakai HSV, thresholding, masking, dan morphology.",
+      "Pengolahan citra memisahkan tomat dari latar belakang (HSV, thresholding, masking) untuk menganalisis warna — bukan untuk input model.",
   },
   {
     step: "3",
     title: "Klasifikasi",
     description:
-      "MobileNetV2 menentukan kelas tomat beserta nilai keyakinannya.",
+      "MobileNetV2 menerima citra asli yang di-resize, lalu menentukan kelas tomat beserta nilai keyakinannya.",
   },
   {
     step: "4",

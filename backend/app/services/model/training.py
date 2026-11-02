@@ -242,6 +242,15 @@ def train(
     # Tapi pastikan ada file final
     save_model(model)
 
+    # Ekspor metrik test set ke metrics.json (hasil training dalam format JSON
+    # untuk dokumentasi laporan & verifikasi model yang dideploy).
+    from app.services.model.evaluation import export_metrics
+
+    try:
+        export_metrics(model, test_ds)
+    except Exception as exc:  # ekspor gagal bukan alasan training dianggap gagal
+        print(f"Peringatan: metrics.json tidak bisa ditulis ({exc})")
+
     # Return combined history object yang mirip Keras History
     class CombinedHistory:
         def __init__(self, history_dict):

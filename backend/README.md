@@ -40,7 +40,7 @@ juga diisi lewat environment variable tanpa file `.env`.
 | `IMAGE_SIZE` | `224` | Ukuran input model |
 | `DATASET_DIR` | `datasets` | Folder dataset |
 | `MAX_UPLOAD_BYTES` | `5242880` | Batas ukuran upload (5 MB) |
-| `CORS_ORIGINS` | `http://localhost:3000` | Origin frontend yang diizinkan |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Origin frontend yang diizinkan |
 
 ## Endpoint
 

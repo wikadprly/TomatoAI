@@ -10,7 +10,7 @@ export default function ColorAnalysisCard({ analysis }: ColorAnalysisCardProps) 
     return (
       <div className="rounded-xl border border-neutral-200 bg-white p-5 text-sm text-neutral-500">
         <p className="font-medium text-neutral-700">Analisis Warna HSV</p>
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="mt-1 text-xs text-neutral-500">
           Metadata analisis warna tidak tersedia untuk deteksi ini (segmentasi tidak menemukan kontur objek terpisah).
         </p>
       </div>
@@ -50,7 +50,7 @@ export default function ColorAnalysisCard({ analysis }: ColorAnalysisCardProps) 
           </div>
           <div className="mt-2 text-xl font-bold text-neutral-800">
             {analysis.mean_hue !== null ? analysis.mean_hue.toFixed(1) : "-"}
-            <span className="ml-1 text-xs font-normal text-neutral-400">/179</span>
+            <span className="ml-1 text-xs font-normal text-neutral-500">/179</span>
           </div>
           <p className="mt-1 text-[11px] text-neutral-500">
             {analysis.mean_hue !== null && analysis.mean_hue < 20
@@ -66,7 +66,7 @@ export default function ColorAnalysisCard({ analysis }: ColorAnalysisCardProps) 
           <span className="text-xs font-medium text-neutral-500">Saturasi (S)</span>
           <div className="mt-2 text-xl font-bold text-neutral-800">
             {analysis.mean_saturation !== null ? analysis.mean_saturation.toFixed(0) : "-"}
-            <span className="ml-1 text-xs font-normal text-neutral-400">/255</span>
+            <span className="ml-1 text-xs font-normal text-neutral-500">/255</span>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
             <div
@@ -82,7 +82,7 @@ export default function ColorAnalysisCard({ analysis }: ColorAnalysisCardProps) 
           <span className="text-xs font-medium text-neutral-500">Intensitas (V)</span>
           <div className="mt-2 text-xl font-bold text-neutral-800">
             {analysis.mean_value !== null ? analysis.mean_value.toFixed(0) : "-"}
-            <span className="ml-1 text-xs font-normal text-neutral-400">/255</span>
+            <span className="ml-1 text-xs font-normal text-neutral-500">/255</span>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
             <div

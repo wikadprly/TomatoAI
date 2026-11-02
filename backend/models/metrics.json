@@ -1,0 +1,20 @@
+{
+  "model": "models/mobilenetv2_tomat.keras",
+  "generated_at": "2026-10-23T00:00:00+00:00",
+  "image_size": 224,
+  "class_names": ["mentah", "setengah_matang", "matang"],
+  "test_set_size": 677,
+  "metrics": {
+    "accuracy": 0.9232,
+    "f1_macro": 0.918
+  },
+  "confusion_matrix": null,
+  "confusion_matrix_labels": {
+    "rows": "label_sebenarnya",
+    "columns": "prediksi",
+    "order": ["mentah", "setengah_matang", "matang"]
+  },
+  "classification_report": null,
+  "source": "dicatat dari hasil evaluasi training_colab.ipynb (test set 677 citra); angka asli tercatat di README.md dan audit.md",
+  "note": "confusion_matrix & classification_report null karena metrik awal dicatat tanpa ekspor penuh. Regenerasi lengkap saat dataset tersedia: python -m scripts.export_metrics"
+}

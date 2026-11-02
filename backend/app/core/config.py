@@ -41,9 +41,14 @@ class Settings:
     ]
 
     # --- CORS, untuk frontend Next.js ---
+    # Default mencakup localhost DAN 127.0.0.1 — Next.js kadang pindah port
+    # atau user membuka via 127.0.0.1, dan bila origin tidak dicakup request
+    # diblokir CORS lalu jatuh ke fallback heuristik tanpa penjelasan.
     CORS_ORIGINS: list[str] = [
         origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+        for origin in os.getenv(
+            "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+        ).split(",")
         if origin.strip()
     ]
 

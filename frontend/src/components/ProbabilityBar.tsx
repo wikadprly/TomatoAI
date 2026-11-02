@@ -70,7 +70,7 @@ export default function ProbabilityBar({
                 className={`h-full rounded-full transition-all duration-500 ${meta.barColor} ${
                   isWinner ? "opacity-100" : "opacity-40"
                 }`}
-                style={{ width: `${Math.max(2, Number(percentage))}%` }}
+                style={{ width: `${Number(percentage)}%` }}
               />
             </div>
           </div>

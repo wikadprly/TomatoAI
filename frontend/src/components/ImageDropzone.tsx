@@ -112,27 +112,44 @@ export default function ImageDropzone() {
   const handleFileChange = (file: File | undefined) => {
     if (!file) return;
 
-    // Validasi tipe file lebih fleksibel (semua format gambar)
-    const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|bmp|jfif)$/i.test(file.name);
-    if (!isImage) {
-      setErrorMessage("Format file harus berupa gambar (JPG, PNG, atau WebP).");
+    // Validasi mengikuti allowlist backend (image/jpeg, image/png, image/webp)
+    // supaya file yang lolos di sini tidak ditolak 415 oleh server.
+    const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+    const extOk = /\.(jpe?g|png|webp)$/i.test(file.name);
+    const typeOk =
+      ALLOWED_TYPES.includes(file.type) ||
+      // Beberapa OS melaporkan tipe non-standar "image/jpg" atau tipe
+      // kosong — izinkan selama ekstensinya benar.
+      ((file.type === "image/jpg" || file.type === "") && extOk);
+    if (!typeOk) {
+      setErrorMessage("Format file harus JPG, PNG, atau WebP.");
       return;
     }
 
+    // Samakan tipe non-standar "image/jpg" ke "image/jpeg" agar diterima
+    // backend (File.type tidak bisa diubah langsung, jadi dibuat File baru).
+    const normalized =
+      file.type === "image/jpg"
+        ? new File([file], file.name, {
+            type: "image/jpeg",
+            lastModified: file.lastModified,
+          })
+        : file;
+
     // Validasi ukuran file (5 MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (normalized.size > 5 * 1024 * 1024) {
       setErrorMessage("Ukuran gambar melebihi batas 5 MB.");
       return;
     }
 
     setErrorMessage(null);
-    setSelectedFile(file);
+    setSelectedFile(normalized);
 
     const reader = new FileReader();
     reader.onload = () => {
       setPreviewUrl(reader.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(normalized);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -240,7 +257,7 @@ export default function ImageDropzone() {
       // tidak boleh jatuh ke fallback heuristik — hasilnya pasti salah dan
       // user berhak tahu alasannya. Fallback hanya untuk backend yang
       // benar-benar tidak terjangkau / gagal memproses.
-      if (err instanceof ApiError && [400, 413, 415].includes(err.status)) {
+      if (err instanceof ApiError && [400, 408, 413, 415].includes(err.status)) {
         setErrorMessage(`${err.message} Silakan perbaiki file lalu coba lagi.`);
         return;
       }
@@ -284,7 +301,7 @@ export default function ImageDropzone() {
       <input
         id="tomato-file-input"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         onChange={(e) => {
           handleFileChange(e.target.files?.[0]);
@@ -294,7 +311,7 @@ export default function ImageDropzone() {
       <input
         id="tomato-camera-input"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         capture="environment"
         className="sr-only"
         onChange={(e) => {
@@ -440,7 +457,7 @@ export default function ImageDropzone() {
                 Pilih atau seret foto tomat ke sini
               </p>
               <p className="mt-1 text-xs text-neutral-500">
-                Mendukung semua format gambar JPG, PNG, atau WebP (maksimal 5 MB)
+                Mendukung format JPG, PNG, atau WebP (maksimal 5 MB)
               </p>
             </div>
 
@@ -466,8 +483,8 @@ export default function ImageDropzone() {
 
             {/* Tombol Uji Langsung dengan Sampel Tomat */}
             <div className="pt-4 border-t border-neutral-100">
-              <p className="text-xs font-medium text-neutral-400 mb-2">
-                Atau coba langsung dengan sampel tomat:
+              <p className="text-xs font-medium text-neutral-500 mb-2">
+                Atau coba langsung dengan sampel tomat (gambar ilustrasi):
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
@@ -499,7 +516,11 @@ export default function ImageDropzone() {
 
       {/* Error Box with Demo Fallback */}
       {errorMessage && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-2">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 space-y-2"
+        >
           <p className="font-semibold">⚠️ Informasi Koneksi API</p>
           <p>{errorMessage}</p>
           {previewUrl && (

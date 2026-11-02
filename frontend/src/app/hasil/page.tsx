@@ -104,7 +104,6 @@ export default function HasilPage() {
             href="/deteksi"
             className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-[#326446] transition-colors"
           >
-            <span>📷</span>
             <span>Mulai Deteksi Tomat</span>
           </Link>
         </div>
@@ -133,7 +132,6 @@ export default function HasilPage() {
       {isDemoMode && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <span className="text-base">💡</span>
             <div>
               <p className="font-semibold">Menampilkan Data Sampel Demonstrasi</p>
               <p className="text-amber-800/90 text-[11px] mt-0.5">

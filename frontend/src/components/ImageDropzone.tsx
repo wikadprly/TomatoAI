@@ -365,7 +365,6 @@ export default function ImageDropzone() {
                 onClick={capturePhoto}
                 className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#326446] transition-colors"
               >
-                <span>📸</span>
                 <span>Ambil Foto Tomat</span>
               </button>
               <button
@@ -430,7 +429,6 @@ export default function ImageDropzone() {
                   </>
                 ) : (
                   <>
-                    <span>🚀</span>
                     <span>Klasifikasikan Tingkat Kematangan</span>
                   </>
                 )}
@@ -449,9 +447,6 @@ export default function ImageDropzone() {
         ) : (
           /* Tampilan Awal Upload */
           <div className="py-6 space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F0F7EE] text-3xl">
-              📸
-            </div>
             <div>
               <p className="text-base font-bold text-neutral-800">
                 Pilih atau seret foto tomat ke sini
@@ -467,7 +462,6 @@ export default function ImageDropzone() {
                 htmlFor="tomato-file-input"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#326446] transition-colors cursor-pointer select-none"
               >
-                <span>📁</span>
                 <span>Pilih Foto dari Perangkat</span>
               </label>
 
@@ -476,7 +470,6 @@ export default function ImageDropzone() {
                 onClick={startCamera}
                 className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 hover:border-[#3F7D58] hover:text-[#3F7D58] transition-colors cursor-pointer"
               >
-                <span>📷</span>
                 <span>Buka Kamera</span>
               </button>
             </div>
@@ -539,7 +532,7 @@ export default function ImageDropzone() {
 
       {/* Tips Panduan */}
       <div className="rounded-xl border border-neutral-200/70 bg-white p-4 text-xs text-neutral-500 space-y-1">
-        <p className="font-semibold text-neutral-700">💡 Tips untuk Hasil Akurasi Terbaik:</p>
+        <p className="font-semibold text-neutral-700">Tips untuk Hasil Akurasi Terbaik:</p>
         <ul className="list-disc list-inside space-y-0.5 text-[11px] text-neutral-500">
           <li>Gunakan tomat yang sudah dipetik (*post-harvest*) di atas meja atau piring.</li>
           <li>Pastikan latar belakang cukup polos dan kontras agar segmentasi objek tomat optimal.</li>

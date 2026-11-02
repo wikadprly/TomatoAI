@@ -81,7 +81,7 @@ export default function TentangPage() {
         </p>
 
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-900 leading-relaxed">
-          <p className="font-semibold mb-1">📌 Batasan Ruang Lingkup Sistem (MVP):</p>
+          <p className="font-semibold mb-1">Batasan Ruang Lingkup Sistem (MVP):</p>
           <ul className="list-disc list-inside space-y-1">
             <li><strong>Post-Harvest Only:</strong> Dikhususkan untuk tomat yang telah dipetik di atas meja/wadah dengan latar belakang kontras/polos (bukan tomat di atas pohon / on-vine).</li>
             <li>Pencahayaan foto diasumsikan memadai dan tidak ada bayangan gelap ekstrem yang menutupi tomat.</li>

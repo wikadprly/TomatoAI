@@ -248,21 +248,26 @@ export default function ImageDropzone() {
     setErrorMessage(null);
 
     try {
-      // 1. Coba kirim ke backend FastAPI port 8000
+      // 1. Coba kirim ke backend API (MobileNetV2)
       const result = await predictTomato(selectedFile);
       saveDetectionResult(result, previewUrl ?? undefined, selectedFile.name);
       router.push("/hasil");
     } catch (err: unknown) {
-      // Request yang DITOLAK server (format salah / file kosong / kebesaran)
-      // tidak boleh jatuh ke fallback heuristik — hasilnya pasti salah dan
-      // user berhak tahu alasannya. Fallback hanya untuk backend yang
-      // benar-benar tidak terjangkau / gagal memproses.
+      // Request yang DITOLAK server (format salah / file kosong / kebesaran /
+      // bukan tomat) tidak boleh jatuh ke fallback heuristik — hasilnya pasti
+      // salah dan user berhak tahu alasannya. Fallback hanya untuk backend
+      // yang benar-benar tidak terjangkau / gagal memproses.
+      if (err instanceof ApiError && err.status === 422) {
+        setErrorMessage(err.message);
+        return;
+      }
+
       if (err instanceof ApiError && [400, 408, 413, 415].includes(err.status)) {
         setErrorMessage(`${err.message} Silakan perbaiki file lalu coba lagi.`);
         return;
       }
 
-      console.warn("Backend FastAPI belum aktif di port 8000, memproses otomatis dengan analisis warna citra:", err);
+      console.warn("Backend API tidak terjangkau, memproses otomatis dengan analisis warna citra:", err);
       // 2. Jika backend offline, analisis piksel foto asli pengguna secara langsung (HSV)
       if (previewUrl) {
         try {
@@ -272,11 +277,15 @@ export default function ImageDropzone() {
           return;
         } catch (clientErr) {
           console.error("Gagal analisis citra lokal:", clientErr);
+          if (clientErr instanceof Error && clientErr.message) {
+            setErrorMessage(clientErr.message);
+            return;
+          }
         }
       }
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat memproses gambar.";
       setErrorMessage(
-        `${msg} (Tips: Pastikan backend FastAPI sedang berjalan di port 8000, atau klik tombol analisis di bawah)`
+        `${msg} (Tips: Pastikan server API berjalan dan dapat diakses dari browser, atau klik tombol analisis di bawah)`
       );
     } finally {
       setIsLoading(false);

@@ -12,7 +12,7 @@ import type { PredictionResponse } from "./types";
 export async function analyzeTomatoClientSide(
   imageDataUrl: string
 ): Promise<PredictionResponse> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (typeof window === "undefined") {
       resolve({
         label: "mentah",
@@ -52,6 +52,13 @@ export async function analyzeTomatoClientSide(
         let totalVal = 0;
         let foregroundCount = 0;
         const totalPixels = size * size;
+
+        // Bounding box piksel foreground, untuk menaksir seberapa "padat"
+        // objek (tomat bulat mengisi kotaknya, pemandangan tidak).
+        let minX = size;
+        let minY = size;
+        let maxX = -1;
+        let maxY = -1;
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
@@ -97,17 +104,45 @@ export async function analyzeTomatoClientSide(
           totalSat += s;
           totalVal += v;
           foregroundCount++;
+
+          const pixelIndex = i / 4;
+          const px = pixelIndex % size;
+          const py = Math.floor(pixelIndex / size);
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
         }
 
-        // Jika gambar tidak kontras atau background semua, fallback aman
-        if (foregroundCount < 100) {
-          foregroundCount = Math.max(1, foregroundCount);
+        // Guard "khusus tomat" sisi klien: tolak bila hampir tidak ada objek
+        // berwarna, atau piksel berwarna tersebar (bukan satu objek padat).
+        const objectRatio = Math.min(1.0, foregroundCount / totalPixels);
+        const bboxW = Math.max(1, maxX - minX + 1);
+        const bboxH = Math.max(1, maxY - minY + 1);
+        const fillRatio = foregroundCount / (bboxW * bboxH);
+
+        if (objectRatio < 0.02) {
+          reject(
+            new Error(
+              "Objek tomat tidak terdeteksi. Pastikan foto berisi satu tomat di latar polos."
+            )
+          );
+          return;
+        }
+
+        if (fillRatio < 0.4) {
+          reject(
+            new Error(
+              "Gambar tidak menyerupai satu objek tomat (objek terlalu tersebar). " +
+                "Gunakan foto satu tomat dengan latar polos."
+            )
+          );
+          return;
         }
 
         const meanHue = totalHue / Math.max(1, foregroundCount);
         const meanSat = totalSat / Math.max(1, foregroundCount);
         const meanVal = totalVal / Math.max(1, foregroundCount);
-        const objectRatio = Math.min(1.0, foregroundCount / totalPixels);
 
         // Rentang Hue OpenCV (0-179):
         // Hijau (Mentah): Hue 32 s/d 90 (derajat 64 - 180)

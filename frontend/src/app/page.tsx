@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const levels = [
@@ -31,13 +32,13 @@ const steps = [
     step: "2",
     title: "Segmentasi & analisis warna",
     description:
-      "Pengolahan citra memisahkan tomat dari latar belakang (HSV, thresholding, masking) untuk menganalisis warna — bukan untuk input model.",
+      "Pengolahan citra memisahkan tomat dari latar belakang (HSV, thresholding, masking) untuk analisis warna sekaligus menentukan area objek (ROI).",
   },
   {
     step: "3",
     title: "Klasifikasi",
     description:
-      "MobileNetV2 menerima citra asli yang di-resize, lalu menentukan kelas tomat beserta nilai keyakinannya.",
+      "MobileNetV2 menerima citra sesuai mode input — asli, crop ROI, atau citra masking — lalu menentukan kelas tomat beserta nilai keyakinannya.",
   },
   {
     step: "4",
@@ -51,7 +52,15 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       <section className="max-w-2xl">
-        <p className="text-sm font-medium text-red-600">Prototipe Web</p>
+        <Image
+          src="/logo-tomatoai.png"
+          alt="Logo TomatoAI"
+          width={72}
+          height={72}
+          className="h-[72px] w-[72px]"
+          priority
+        />
+        <p className="mt-4 text-sm font-medium text-red-600">Prototipe Web</p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight">
           Klasifikasi Tingkat Kematangan Tomat
         </h1>

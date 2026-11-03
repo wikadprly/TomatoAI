@@ -1,0 +1,28 @@
+# Konteks build backend saja — jangan bawa data besar/rahasia ke image.
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtualenv & cache lokal
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Rahasia & konfigurasi lokal
+.env
+
+# Dataset & artefak training (tidak dipakai saat inferensi)
+datasets/
+tests/
+scripts/
+*.ipynb
+training_colab.ipynb
+
+# Editor & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

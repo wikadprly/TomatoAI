@@ -9,7 +9,7 @@ pydantic==2.10.4
 # Pengolahan citra
 pillow==11.1.0
 numpy==2.2.1
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.84
 
 # Utilitas dataset
 kaggle==2.2.4

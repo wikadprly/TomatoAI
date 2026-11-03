@@ -5,6 +5,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from app.core.config import settings
 from app.schemas.prediction import PredictionResponse
 from app.services.pipeline import ModelNotReadyError, classify_tomato
+from app.services.tomato_guard import NotATomatoError
 
 router = APIRouter(tags=["prediction"])
 
@@ -23,9 +24,9 @@ def predict(file: UploadFile = File(...)) -> PredictionResponse:
 
     Raises:
         HTTPException: 400 bila file kosong, 413 bila terlalu besar,
-            415 bila format tidak didukung, 501 bila modul pemrosesan
-            belum diisi,        503 bila bobot model atau TensorFlow belum
-            tersedia.
+            415 bila format tidak didukung, 422 bila gambar bukan satu
+            tomat yang valid, 501 bila modul pemrosesan belum diisi,
+            503 bila bobot model atau TensorFlow belum tersedia.
     """
     if file.content_type not in settings.ALLOWED_CONTENT_TYPES:
         allowed = ", ".join(settings.ALLOWED_CONTENT_TYPES)
@@ -61,6 +62,10 @@ def predict(file: UploadFile = File(...)) -> PredictionResponse:
 
     try:
         return classify_tomato(content)
+    except NotATomatoError as exc:
+        # 422: request valid secara format, tetapi isinya bukan satu tomat
+        # yang layak diprediksi (guard bentuk + keyakinan model).
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ModelNotReadyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ImportError as exc:

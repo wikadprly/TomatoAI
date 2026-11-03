@@ -18,6 +18,7 @@ from PIL import Image
 
 from app.core.config import settings
 from app.schemas.prediction import ColorAnalysis, PredictionResponse
+from app.services.tomato_guard import ensure_tomato
 
 __all__ = [
     "model_is_ready",
@@ -103,6 +104,7 @@ def predict_proba(model, image: Image.Image) -> dict[str, float]:
 def predict_label(
     image: Image.Image,
     color_analysis: ColorAnalysis | None = None,
+    mask: np.ndarray | None = None,
 ) -> PredictionResponse:
     """Klasifikasikan satu citra tomat.
 
@@ -113,12 +115,21 @@ def predict_label(
     Args:
         image: Citra tomat hasil segmentasi.
         color_analysis: Analisis warna dari tahap segmentasi, boleh `None`.
+        mask: Mask objek terbesar dari segmentasi. Dipakai guard "khusus
+            tomat" untuk memvalidasi bentuk sebelum hasil dikembalikan.
 
     Returns:
         Hasil klasifikasi beserta confidence score.
+
+    Raises:
+        NotATomatoError: bila gambar tidak lolos batasan lingkungan tomat.
     """
     model = load_model()
     probs = predict_proba(model, image)
+
+    # Tolak gambar yang jelas bukan satu tomat (pemandangan/orang/objek
+    # non-bulat) atau prediksi yang ragu, sebelum hasil dikirim ke pengguna.
+    ensure_tomato(mask=mask, probabilities=probs)
 
     # Ambil kelas dengan probabilitas tertinggi
     best_class = max(probs, key=probs.get)

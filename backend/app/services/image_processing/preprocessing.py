@@ -16,7 +16,23 @@ import cv2
 
 from app.core.config import settings
 
-__all__ = ["load_image_from_bytes", "denoise_image"]
+__all__ = ["load_image_raw", "load_image_from_bytes", "denoise_image"]
+
+
+def load_image_raw(image_bytes: bytes) -> Image.Image:
+    """Ubah isi file gambar menjadi citra RGB pada resolusi aslinya.
+
+    Dipakai saat pipeline butuh resolusi penuh untuk crop ROI (mode input
+    ``crop``), sebelum nanti di-resize ke ukuran model.
+    """
+    with BytesIO(image_bytes) as buffer:
+        image = Image.open(buffer)
+        image.load()
+
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
+    return image
 
 
 def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
@@ -28,14 +44,8 @@ def load_image_from_bytes(image_bytes: bytes) -> Image.Image:
     Returns:
         Citra RGB dengan ukuran `settings.IMAGE_SIZE` x `settings.IMAGE_SIZE`.
     """
-    image = Image.open(BytesIO(image_bytes))
-
-    if image.mode != "RGB":
-        image = image.convert("RGB")
-
-    image = image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
-
-    return image
+    image = load_image_raw(image_bytes)
+    return image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
 
 
 def denoise_image(image: Image.Image) -> Image.Image:

@@ -30,7 +30,8 @@ def _bytes_gambar_lingkaran_merah(size: int = 224) -> bytes:
 def test_classify_tomato_mengisi_color_analysis(monkeypatch):
     monkeypatch.setattr(pipeline, "model_is_ready", lambda: True)
 
-    def predict_tiruan(image, color_analysis=None):
+    def predict_tiruan(image, color_analysis=None, mask=None):
+        assert mask is not None
         return PredictionResponse(
             label="matang",
             confidence=0.9,

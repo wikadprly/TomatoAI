@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.api.routes import predict as predict_route
 from app.main import app
+from app.services.tomato_guard import NotATomatoError
 
 client = TestClient(app)
 
@@ -62,3 +63,20 @@ def test_predict_mengembalikan_503_bila_dependency_ml_absen(monkeypatch) -> None
 
     assert response.status_code == 503
     assert "requirements-ml.txt" in response.json()["detail"]
+
+
+def test_predict_menolak_gambar_bukan_tomat(monkeypatch) -> None:
+    """Guard tomat harus menghasilkan 422, bukan 500 atau fallback."""
+
+    def bukan_tomat(image_bytes: bytes):
+        raise NotATomatoError("Gambar tidak terdeteksi sebagai tomat.")
+
+    monkeypatch.setattr(predict_route, "classify_tomato", bukan_tomat)
+
+    response = client.post(
+        "/api/v1/predict",
+        files={"file": ("orang.jpg", b"isi-citra", "image/jpeg")},
+    )
+
+    assert response.status_code == 422
+    assert "tomat" in response.json()["detail"].lower()

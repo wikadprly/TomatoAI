@@ -22,6 +22,17 @@ class Settings:
     )
     IMAGE_SIZE: int = int(os.getenv("IMAGE_SIZE", "224"))
 
+    # --- Input model dari hasil pengolahan citra ---
+    # original = citra asli 224 (distribusi saat training, default)
+    # crop     = potong bbox objek tomat (mask + margin) -> resize 224
+    # segment  = citra hasil masking (latar hitam) -> resize 224
+    # Nilai tak dikenal dianggap "original". Ubah default setelah menjalankan
+    # scripts/evaluate_input_modes.py pada test set.
+    INFERENCE_INPUT_MODE: str = (
+        os.getenv("INFERENCE_INPUT_MODE", "original").strip().lower()
+    )
+    CROP_MARGIN_RATIO: float = float(os.getenv("CROP_MARGIN_RATIO", "0.15"))
+
     # Urutan kelas harus sama dengan urutan output layer model.
     CLASS_NAMES: list[str] = [
         "mentah",
@@ -51,6 +62,33 @@ class Settings:
         ).split(",")
         if origin.strip()
     ]
+
+    # --- Guard "khusus tomat" ---
+    # Lapisan pengaman berbasis geometri mask + keyakinan model. Bukan model
+    # pembelajaran, jadi apel/jeruk bulat masih bisa lolos. Matikan lewat
+    # TOMATO_GUARD_ENABLED=0 bila terlalu ketat untuk dataset tertentu.
+    TOMATO_GUARD_ENABLED: bool = os.getenv(
+        "TOMATO_GUARD_ENABLED", "1"
+    ).strip().lower() not in ("0", "false", "no", "off")
+
+    # Rasio luas objek terhadap seluruh gambar.
+    MIN_OBJECT_RATIO: float = float(os.getenv("MIN_OBJECT_RATIO", "0.03"))
+    MAX_OBJECT_RATIO: float = float(os.getenv("MAX_OBJECT_RATIO", "0.85"))
+
+    # Bentuk objek: 1.0 = lingkaran sempurna.
+    MIN_CIRCULARITY: float = float(os.getenv("MIN_CIRCULARITY", "0.45"))
+    MIN_FILL_RATIO: float = float(os.getenv("MIN_FILL_RATIO", "0.60"))
+    MIN_SOLIDITY: float = float(os.getenv("MIN_SOLIDITY", "0.80"))
+    MIN_ASPECT_RATIO: float = float(os.getenv("MIN_ASPECT_RATIO", "0.55"))
+    MAX_ASPECT_RATIO: float = float(os.getenv("MAX_ASPECT_RATIO", "1.80"))
+
+    # Keyakinan model.
+    MIN_MODEL_CONFIDENCE: float = float(
+        os.getenv("MIN_MODEL_CONFIDENCE", "0.55")
+    )
+    MIN_CONFIDENCE_MARGIN: float = float(
+        os.getenv("MIN_CONFIDENCE_MARGIN", "0.15")
+    )
 
 
 settings = Settings()

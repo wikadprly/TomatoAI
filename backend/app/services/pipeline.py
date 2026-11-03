@@ -1,20 +1,30 @@
-"""Pipeline end-to-end: gambar -> segmentasi -> MobileNetV2 -> label.
+"""Pipeline end-to-end: gambar -> pengolahan citra -> MobileNetV2 -> label.
 
 Modul ini hanya merangkai urutan tahap. Logika tiap tahap ada di:
 - `services/image_processing/`
 - `services/model/`
 
-Catatan penting: model dilatih pada citra tomat asli (background disertakan,
-hanya rescale 1/255, tanpa denoise maupun segmentasi). Karena itu model
-menerima citra asli yang sudah di-resize, BUKAN hasil segmentasi (background
-hitam). Segmentasi tetap dijalankan untuk menghasilkan `ColorAnalysis` sebagai
-metadata pendukung, namun tidak menggantikan input model.
+Alur:
+    1. pra-pemrosesan: baca citra, normalisasi ukuran;
+    2. segmentasi HSV + morfologi: isolasi objek tomat -> mask;
+    3. analisis warna area tomat -> `ColorAnalysis` (metadata);
+    4. pemilihan input model sesuai `INFERENCE_INPUT_MODE`:
+       - `original`: citra 224 asli (distribusi saat training),
+       - `crop`: hasil potong bbox mask dari resolusi penuh,
+       - `segment`: citra hasil masking (latar hitam);
+    5. klasifikasi MobileNetV2;
+    6. guard "khusus tomat" (validasi bentuk mask + keyakinan model).
+
+Default `original` dipertahankan karena model dilatih pada citra utuh.
+Setelah `scripts/evaluate_input_modes.py` dijalankan pada test set, mode
+`crop`/`segment` bisa diaktifkan lewat env bila hasilnya lebih baik/setara.
 """
 
 from app.core.config import settings
 from app.schemas.prediction import PredictionResponse
 from app.services.image_processing.color_analysis import analyze_color
-from app.services.image_processing.preprocessing import load_image_from_bytes
+from app.services.image_processing.preprocessing import load_image_raw
+from app.services.image_processing.roi import prepare_model_input
 from app.services.image_processing.segmentation import segment_tomato_with_mask
 from app.services.model.predictor import model_is_ready, predict_label
 
@@ -29,12 +39,10 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
     Tahapan:
         1. baca & normalisasi ukuran gambar (preprocessing),
         2. segmentasi objek tomat (HSV threshold -> mask -> morfologi),
-        3. analisis warna area tomat (metadata, bukan input model),
-        4. klasifikasi dengan MobileNetV2 pada citra asli (bukan segmentasi).
-
-    Model menerima citra asli yang sudah di-resize ke 224x224 — sama dengan
-    distribusi saat training (citra tomat utuh dengan background). Hasil
-    segmentasi hanya dipakai untuk mengisi ``color_analysis`` pada respons.
+        3. analisis warna area tomat (metadata),
+        4. pilih input model sesuai `settings.INFERENCE_INPUT_MODE`,
+        5. klasifikasi dengan MobileNetV2,
+        6. guard "khusus tomat".
 
     Args:
         image_bytes: isi file gambar hasil upload pengguna.
@@ -51,13 +59,23 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
             "Modul model perlu menyelesaikan training/fine-tuning MobileNetV2 terlebih dahulu."
         )
 
-    image = load_image_from_bytes(image_bytes)
+    raw_image = load_image_raw(image_bytes)
+    image = raw_image.resize((settings.IMAGE_SIZE, settings.IMAGE_SIZE))
 
-    # Segmentasi untuk metadata warna. Bila gagal (mask kosong),
-    # color_analysis = None dan model tetap menerima citra asli.
-    _, mask, hsv_array = segment_tomato_with_mask(image)
+    # Segmentasi untuk metadata warna sekaligus sumber input model
+    # (mode crop/segment). Bila mask kosong, color_analysis = None dan
+    # mode crop/segment otomatis jatuh ke citra asli.
+    segmented_image, mask, hsv_array = segment_tomato_with_mask(image)
     color_analysis = analyze_color(mask, hsv_array)
 
-    # Model dilatih pada citra asli (background disertakan), jadi kirim
-    # citra asli, bukan hasil segmentasi yang background-nya hitam.
-    return predict_label(image, color_analysis=color_analysis)
+    model_input = prepare_model_input(
+        raw_image,
+        image,
+        segmented_image,
+        mask,
+        mode=settings.INFERENCE_INPUT_MODE,
+        margin_ratio=settings.CROP_MARGIN_RATIO,
+    )
+
+    # `mask` diteruskan ke guard "khusus tomat" (validasi bentuk objek).
+    return predict_label(model_input, color_analysis=color_analysis, mask=mask)

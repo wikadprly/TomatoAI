@@ -23,24 +23,57 @@ TomatoAI dikembangkan sebagai implementasi integrasi antara:
 ### Alur Sistem
 
 ```text
-Foto Tomat
-    ├── Preprocessing (resize & normalisasi)
-    │         ↓
-    │   RGB → HSV → Thresholding & Segmentation → Analisis Warna (metadata)
-    │
-    └── Citra ASLI yang di-resize 224×224
-              ↓
-         MobileNetV2
-              ↓
-         Klasifikasi
-              ↓
-         Mentah / Setengah Matang / Matang
-              ↓
-         Confidence Score
+[Browser] unggah foto
+      │ validasi tipe & ukuran
+      ▼
+POST /api/v1/predict
+      │
+      ▼
+[Backend] validasi request (400 / 413 / 415)
+      │
+      ▼
+┌─ Pengolahan Citra ───────────────────────────────────┐
+│ 1. preprocessing: baca gambar → RGB → resize 224     │
+│ 2. segmentasi: RGB → HSV → thresholding              │
+│    → masking → morfologi → mask objek tomat          │
+│ 3. analisis warna area tomat → color_analysis        │
+└──────────────────────────────────────────────────────┘
+      │ pilih input model (INFERENCE_INPUT_MODE)
+      │   • original : citra 224 asli (default)
+      │   • crop     : potong bbox mask + margin → 224
+      │   • segment  : citra masking (latar hitam)
+      ▼
+┌─ AI ─────────────────────────────────────────────────┐
+│ 4. MobileNetV2 → probabilitas 3 kelas                │
+│ 5. guard khusus tomat (bentuk mask + keyakinan)      │
+└──────────────────────────────────────────────────────┘
+      │
+      ▼
+Respons JSON: label, confidence, probabilities, color_analysis
+200 = berhasil | 422 = bukan satu tomat | 503 = model belum siap
+      │
+      ▼
+[Frontend] halaman hasil
+  • 200 → tampilkan kelas + confidence
+  • 422 → pesan penolakan (tanpa fallback heuristik)
+  • backend mati → fallback heuristik browser + banner "Bukan Output AI"
 ```
 
-**Catatan:** segmentasi dipakai untuk **analisis warna (metadata)**, bukan sebagai
-input model — MobileNetV2 menerima citra asli sesuai distribusi data training.
+**Mode input AI.** Default `original` karena MobileNetV2 dilatih pada citra
+utuh (dengan background). Hasil pengolahan citra bisa langsung menjadi input
+lewat `INFERENCE_INPUT_MODE=crop` (potong area objek dari resolusi penuh) atau
+`segment` (citra hasil masking). Sebelum mengganti default, bandingkan dulu
+ketiganya pada test set — **tanpa training ulang**:
+
+```bash
+cd backend
+python -m scripts.evaluate_input_modes --out models/input_mode_comparison.json
+```
+
+**Pembagian peran.** Pengolahan citra menangani preprocessing, HSV,
+thresholding, morfologi, segmentasi, ROI, dan analisis warna. AI (MobileNetV2)
+menangani klasifikasi kematangan. Guard hanya memvalidasi bahwa input memang
+satu tomat.
 
 ---
 
@@ -59,12 +92,12 @@ input model — MobileNetV2 menerima citra asli sesuai distribusi data training.
 ## 🛠 Teknologi & Environment
 
 - **Python**: 3.13 (venv `backend/.venv`)
-- **TensorFlow**: 2.21.0 (terpasang & terverifikasi — `pytest` 38 passed)
+- **TensorFlow**: 2.21.0 (terpasang & terverifikasi — `pytest` 54 passed)
 - **Keras**: 3 (native TF 2.21 format `.keras`)
 - **FastAPI**: Backend API
 - **Next.js**: Frontend framework
 
-**Catatan:** Library ML (`requirements-ml.txt`) memakai `tensorflow==2.21.0` yang kompatibel dengan Python 3.12-3.14. Training ulang bisa lewat `training_colab.ipynb` (Colab) atau `app/services/model/training.py` — keduanya menghasilkan `backend/models/mobilenetv2_tomat.keras`.
+**Catatan:** Library ML (`requirements-ml.txt`) memakai `tensorflow==2.21.0` yang kompatibel dengan Python 3.10–3.13. Training ulang bisa lewat `training_colab.ipynb` (Colab) atau `app/services/model/training.py` — keduanya menghasilkan `backend/models/mobilenetv2_tomat.keras`.
 
 ---
 

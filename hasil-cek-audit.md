@@ -196,4 +196,148 @@ backend/README.md                     - tabel CORS diperbarui
 
 ---
 
-*Laporan ini diverifikasi terhadap codebase pada 23 Oktober 2026 dan diperbarui 2 November 2026.*
+---
+
+## 🚀 Audit Kesiapan Deploy — 3 November 2026
+
+Fokus: kesiapan menuju hosting gratis (**Vercel** untuk frontend, **Hugging
+Face Spaces Docker** untuk backend AI).
+
+### Hasil verifikasi
+
+| Cek | Hasil |
+|------|--------|
+| `pytest` backend (venv Python 3.13 + TF 2.21.0) | ✅ **39 passed**, 0 skipped |
+| `npm run typecheck` | ✅ Lolos (`tsc --noEmit`) |
+| `npm run lint` | ✅ 0 masalah |
+| `npm run build` (Next.js 16 produksi) | ✅ Sukses, 5 route statis |
+| Smoke test API (model asli) | ✅ `/health` → `model_loaded: true`; `/predict` → `200` (`mentah`, 0.952) |
+| File model ter-track git | ✅ `mobilenetv2_tomat.keras` (9.2 MB) |
+
+### Perbaikan yang diterapkan
+
+| No | Item | Lokasi | Keterangan |
+|----|------|--------|------------|
+| D1 | Belum ada artefak container | `backend/Dockerfile`, `backend/.dockerignore` | Base `python:3.13-slim`, port **7860**, user non-root, `HEALTHCHECK`, system lib `libgomp1` (TF) + `libglib2.0-0` (OpenCV) |
+| D2 | Dependensi produksi terlalu berat | `backend/requirements-prod.txt` | Hanya runtime inferensi (tanpa kaggle/pytest/httpx/matplotlib/scikit-learn) |
+| D3 | OpenCV non-headless butuh lib GUI | `backend/requirements.txt` | `opencv-python` → `opencv-python-headless` |
+| D4 | Timeout 30 dtk vs cold start HF | `frontend/src/lib/api.ts` | Dinaikkan ke **90 detik**; pesan error diperbarui |
+| D5 | Pesan error hardcode "port 8000" | `api.ts`, `ImageDropzone.tsx` | Diganti jadi "server API tidak terjangkau" |
+| D6 | Risiko fallback heuristik tak terlihat | `hasil/page.tsx` | Diverifikasi: banner kuning "Bukan Output AI" + label "% Skor Heuristik" + deskripsi halaman sudah tampil otomatis |
+| D7 | Panduan deploy belum mencakup Docker | `DEPLOY.md` | Ditambah bagian Hugging Face Spaces, renumbering, checklist cold start & CORS |
+
+### Catatan / risiko tersisa
+
+1. **Docker belum bisa diuji lokal** (Docker tidak terpasang di mesin audit).
+   Build image baru terbukti saat Space HF pertama kali dibangun.
+2. **CORS wajib diset** `CORS_ORIGINS=https://<domain-vercel>` di env Space;
+   default hanya `localhost`, jika lupa → browser memblokir → fallback heuristik.
+3. **Cold start HF free tier** tetap bisa lambat (Space tidur ±48 jam). Timeout
+   frontend 90 dtk sudah menutup sebagian besar kasus, bukan jaminan.
+4. **Versi TF**: `tensorflow==2.21.0` mendukung Python 3.10–3.13 (wheel `cp313`
+   tersedia), cocok dengan base image.
+
+### Kesimpulan
+
+**Siap deploy** ke Vercel + HF Spaces setelah env `CORS_ORIGINS` dan
+`NEXT_PUBLIC_API_BASE_URL` diisi. Tidak ada blocker kode tersisa; satu-satunya
+item yang belum terverifikasi adalah build image Docker (butuh Docker/HF).
+
+---
+
+## 🍅 Batasan Lingkungan "Khusus Tomat" — 3 November 2026
+
+**Masalah:** model hanya punya 3 kelas kematangan (softmax), sehingga gambar
+apa pun selalu dipetakan ke salah satunya — foto orang → "mentah", apel merah →
+"setengah matang", jeruk kuning → "matang". Tidak ada kelas "bukan tomat".
+
+**Solusi yang diterapkan:** guard heuristik `backend/app/services/tomato_guard.py`
+yang berjalan sebelum hasil dikembalikan:
+
+| Pemeriksaan | Sumber | Default |
+|---|---|---|
+| Rasio luas objek | mask segmentasi | 0.03–0.85 |
+| Kebulatan (circularity) | kontur mask | ≥ 0.45 |
+| Kepadatan isi bbox | kontur mask | ≥ 0.60 |
+| Solidity (convex hull) | kontur mask | ≥ 0.80 |
+| Rasio aspek | bbox kontur | 0.55–1.80 |
+| Keyakinan model | probabilitas | ≥ 0.55 |
+| Margin top-1 vs top-2 | probabilitas | ≥ 0.15 |
+
+- Gagal guard → `POST /api/v1/predict` membalas **422** dengan pesan jelas;
+  frontend menampilkan pesan dan **tidak** jatuh ke fallback heuristik.
+- Fallback sisi browser (`clientClassifier.ts`) juga menolak gambar tanpa objek
+  padat (rasio foreground < 2% atau fill bbox < 0.4).
+- Semua ambang dapat diubah lewat env / `TOMATO_GUARD_ENABLED=0`.
+
+**Keterbatasan (jujur):** guard ini **bukan model pembelajaran**. Apel/jeruk
+yang bulat, berwarna, dan memenuhi frame bisa tetap lolos. Untuk menolak buah
+lain secara andal, model perlu dilatih ulang dengan **kelas ke-4
+`bukan_tomat`** dan dataset negatif (orang, apel, jeruk, pemandangan, dll).
+
+### Verifikasi guard (dijalankan)
+
+| Kasus uji | Hasil |
+|---|---|
+| Satu tomat bulat merah di latar polos | ✅ `200` (`matang`, 0.868) |
+| Frame penuh warna (bukan objek tunggal) | ✅ `422` "Objek terlalu memenuhi frame" |
+| Banyak kotak warna tersebar (mirip keramaian) | ✅ `422` "Objek tomat terlalu kecil/tidak terdeteksi" |
+| `pytest` backend | ✅ **47 passed** (8 test guard baru) |
+| `typecheck` + `lint` + `build` frontend | ✅ Lolos |
+
+---
+
+## 🔗 Integrasi Pengolahan Citra → AI (input model) — 3 November 2026
+
+**Masalah:** sebelumnya segmentasi hanya menghasilkan `color_analysis`
+(metadata), sementara MobileNetV2 tetap menerima citra asli. Untuk tugas
+gabungan pengolahan citra + rekayasa AI, rantainya belum benar-benar
+tersambung ("hasil olahan citra masuk ke AI").
+
+**Perubahan:**
+
+- `backend/app/services/image_processing/roi.py` (baru): `crop_to_mask()` dan
+  `prepare_model_input()`.
+- `backend/app/services/image_processing/preprocessing.py`: `load_image_raw()`
+  (resolusi penuh untuk crop).
+- `backend/app/services/pipeline.py`: alur menjadi
+  `preprocessing → segmentasi → analisis warna → pilih input → MobileNetV2
+  → guard`.
+- `backend/app/core/config.py` + `.env.example`: `INFERENCE_INPUT_MODE`
+  (`original`/`crop`/`segment`) dan `CROP_MARGIN_RATIO`.
+- `backend/scripts/evaluate_input_modes.py` (baru): membandingkan ketiga mode
+  pada test set **tanpa training ulang**.
+- `backend/tests/test_roi.py` (baru, 7 test).
+
+**Keputusan default:** `original` dipertahankan sampai evaluasi test set
+menunjukkan `crop`/`segment` lebih baik atau setara. Model tidak dilatih ulang;
+yang diubah hanya cara menyiapkan input.
+
+**Cara evaluasi (tanpa Kaggle, kalau test set masih ada):**
+
+```bash
+cd backend
+python -m scripts.evaluate_input_modes --out models/input_mode_comparison.json
+```
+
+Hasil JSON berisi accuracy, macro-F1, metrik per kelas, dan confusion matrix
+untuk tiap mode. Setelah itu set `INFERENCE_INPUT_MODE=crop` (atau `segment`)
+bila angkanya mendukung.
+
+### Verifikasi (dijalankan)
+
+| Kasus uji | Hasil |
+|---|---|
+| `pytest` backend (termasuk 7 test ROI) | ✅ **54 passed** |
+| Smoke test 3 mode pada citra sintetis 640x480 | ✅ `original` 0.9322, `crop` 0.9851, `segment` 0.6288 (semua `matang`) |
+| `python -m scripts.evaluate_input_modes --help` | ✅ CLI valid |
+
+**Catatan:** evaluasi penuh belum dijalankan karena `datasets/test/` kosong di
+mesin ini. Jalankan skrip di mesin yang masih menyimpan test set, atau unduh
+ulang dataset yang sama.
+
+---
+
+*Laporan ini diverifikasi terhadap codebase pada 23 Oktober 2026 dan diperbarui
+3 November 2026 (audit kesiapan deploy + batasan lingkungan tomat + integrasi
+input pengolahan citra ke AI).*

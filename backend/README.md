@@ -38,6 +38,8 @@ juga diisi lewat environment variable tanpa file `.env`.
 | --- | --- | --- |
 | `MODEL_PATH` | `models/mobilenetv2_tomat.keras` | Lokasi bobot MobileNetV2 |
 | `IMAGE_SIZE` | `224` | Ukuran input model |
+| `INFERENCE_INPUT_MODE` | `original` | Input model: `original`, `crop`, atau `segment` |
+| `CROP_MARGIN_RATIO` | `0.15` | Margin crop di sekitar bbox objek (mode `crop`) |
 | `DATASET_DIR` | `datasets` | Folder dataset |
 | `MAX_UPLOAD_BYTES` | `5242880` | Batas ukuran upload (5 MB) |
 | `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Origin frontend yang diizinkan |
@@ -73,6 +75,7 @@ Kode error yang mungkin muncul:
 | 400 | File gambar kosong |
 | 413 | Ukuran file melebihi `MAX_UPLOAD_BYTES` |
 | 415 | Format gambar tidak didukung |
+| 422 | Gambar bukan satu tomat (guard khusus tomat) |
 | 501 | Cadangan: modul pemrosesan citra/model belum diisi |
 | 503 | Bobot MobileNetV2 belum tersedia |
 
@@ -87,9 +90,24 @@ Kode error yang mungkin muncul:
 `app/services/pipeline.py` merangkai keduanya:
 
 ```text
-gambar -> preprocessing -> denoise -> segmentasi (mask + HSV)
-       -> analisis warna -> MobileNetV2 -> label + confidence
+gambar -> preprocessing -> segmentasi (mask + HSV) -> analisis warna
+       -> pilih input (original/crop/segment) -> MobileNetV2
+       -> guard khusus tomat -> label + confidence
 ```
+
+Mode input diatur lewat `INFERENCE_INPUT_MODE`. Default `original` (citra utuh,
+sesuai distribusi training). Mode `crop` memotong area objek dari resolusi
+penuh memakai bbox mask + margin; mode `segment` memakai citra hasil masking
+(latar hitam). Sebelum mengganti default, bandingkan dulu ketiganya pada test
+set:
+
+```bash
+python -m scripts.evaluate_input_modes --out models/input_mode_comparison.json
+```
+
+Skrip ini **tidak** melatih ulang model; ia hanya mengevaluasi bobot yang ada
+dengan tiga cara menyiapkan input. Dataset test harus tersedia di
+`datasets/test/<kelas>/` (tidak perlu mengunduh ulang kalau masih ada).
 
 Bila segmentasi tidak menemukan objek tomat (mask kosong), pipeline memakai
 citra asli tanpa segmentasi dan mengisi `color_analysis` dengan `null`,

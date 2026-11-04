@@ -11,6 +11,7 @@ import pytest
 pytest.importorskip("sklearn", reason="scikit-learn tidak terpasang")
 np = pytest.importorskip("numpy", reason="numpy tidak terpasang")
 
+from app.core.config import settings
 from app.services.model import evaluation
 
 
@@ -58,8 +59,9 @@ def test_confusion_matrix_ukuran_dan_total():
         ModelTiruan(_one_hot(y_pred)), DatasetTiruan(y_true)
     )
 
-    assert len(cm) == 3
-    assert all(len(baris) == 3 for baris in cm)
+    n_kelas = len(settings.CLASS_NAMES)
+    assert len(cm) == n_kelas
+    assert all(len(baris) == n_kelas for baris in cm)
     assert sum(sum(baris) for baris in cm) == len(y_true)
 
 
@@ -99,7 +101,7 @@ def test_export_metrics_tulis_json_valid(tmp_path):
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["metrics"]["accuracy"] == 1.0
     assert data["test_set_size"] == 4
-    assert data["class_names"] == ["mentah", "setengah_matang", "matang"]
-    assert len(data["confusion_matrix"]) == 3
+    assert data["class_names"] == list(settings.CLASS_NAMES)
+    assert len(data["confusion_matrix"]) == len(settings.CLASS_NAMES)
     assert data["generated_at"]  # terisi timestamp
     assert "mentah" in data["classification_report"]

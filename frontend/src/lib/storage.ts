@@ -204,6 +204,21 @@ export function getMockDetection(level: MaturityLevel = "matang"): DetectionReco
         object_ratio: 0.45,
       },
     },
+    bukan_tomat: {
+      confidence: 0.918,
+      probabilities: {
+        matang: 0.031,
+        setengah_matang: 0.033,
+        mentah: 0.018,
+        bukan_tomat: 0.918,
+      },
+      color_analysis: {
+        mean_hue: 30.1, // Hue oranye jeruk di rentang 15-35
+        mean_saturation: 210.4,
+        mean_value: 205.7,
+        object_ratio: 0.36,
+      },
+    },
   };
 
   const selected = configs[level];

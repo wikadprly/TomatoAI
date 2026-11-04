@@ -44,17 +44,19 @@ POST /api/v1/predict
       │   • segment  : citra masking (latar hitam)
       ▼
 ┌─ AI ─────────────────────────────────────────────────┐
-│ 4. MobileNetV2 → probabilitas 3 kelas                │
+│ 4. MobileNetV2 → probabilitas 4 kelas                │
+│    (mentah | setengah_matang | matang | bukan_tomat)  │
 │ 5. guard khusus tomat (bentuk mask + keyakinan)      │
 └──────────────────────────────────────────────────────┘
       │
       ▼
 Respons JSON: label, confidence, probabilities, color_analysis
-200 = berhasil | 422 = bukan satu tomat | 503 = model belum siap
+200 = berhasil (termasuk "bukan_tomat") | 422 = gambar tak valid
       │
       ▼
 [Frontend] halaman hasil
   • 200 → tampilkan kelas + confidence
+  • "bukan_tomat" → badge Bukan Tomat (bukan hasil kematangan)
   • 422 → pesan penolakan (tanpa fallback heuristik)
   • backend mati → fallback heuristik browser + banner "Bukan Output AI"
 ```

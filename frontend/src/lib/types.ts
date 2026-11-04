@@ -6,8 +6,13 @@
  * format di frontend.
  */
 
-/** Tiga tingkat kematangan tomat yang diklasifikasikan model. */
-export const MATURITY_LEVELS = ["mentah", "setengah_matang", "matang"] as const;
+/** Tingkat kematangan tomat + kelas penolakan yang diklasifikasikan model. */
+export const MATURITY_LEVELS = [
+  "mentah",
+  "setengah_matang",
+  "matang",
+  "bukan_tomat",
+] as const;
 
 export type MaturityLevel = (typeof MATURITY_LEVELS)[number];
 

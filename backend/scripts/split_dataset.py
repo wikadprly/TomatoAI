@@ -32,6 +32,10 @@ def split_dataset(
 ) -> dict[str, dict[str, int]]:
     """Bagi dataset bersih ke train/val/test secara stratified per kelas.
 
+    Folder tujuan ``train``/``val``/``test`` dikosongkan dulu sebelum diisi
+    ulang, supaya menjalankan skrip berulang tetap menghasilkan split yang
+    bersih dan bebas tumpang tindih antar-split.
+
     Args:
         clean_dir: Folder dataset bersih (satu subfolder per kelas).
         output_dir: Folder keluaran; dibuat subfolder train/val/test di dalamnya.
@@ -51,6 +55,14 @@ def split_dataset(
         raise FileNotFoundError(f"Folder dataset bersih tidak ditemukan: {clean_dir}")
     if len(ratios) != len(SPLIT_NAMES) or abs(sum(ratios) - 1.0) > 1e-9:
         raise ValueError(f"Rasio harus {len(SPLIT_NAMES)} angka berjumlah 1.0: {ratios}")
+
+    # Bersihkan hasil split sebelumnya: tanpa ini, skrip yang dijalankan
+    # berulang menyisakan berkas lama sehingga satu citra bisa berada di
+    # dua split sekaligus (bocor antar-split) dan evaluasi jadi tidak valid.
+    for split in SPLIT_NAMES:
+        lama = output_dir / split
+        if lama.is_dir():
+            shutil.rmtree(lama)
 
     rng = random.Random(seed)
     report: dict[str, dict[str, int]] = {split: {} for split in SPLIT_NAMES}

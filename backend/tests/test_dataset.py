@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 from PIL import Image
 
+from app.core.config import settings
 from app.services.model.dataset import build_datasets, class_counts
 
 
@@ -38,9 +39,9 @@ def tf():
 
 @pytest.fixture
 def pohon_dataset(tmp_path):
-    """Struktur datasets/{train,val,test}/<3 kelas> berisi citra kecil."""
+    """Struktur datasets/{train,val,test}/<semua CLASS_NAMES> berisi citra kecil."""
     for split in ("train", "val", "test"):
-        for kelas in ("mentah", "setengah_matang", "matang"):
+        for kelas in settings.CLASS_NAMES:
             folder = tmp_path / split / kelas
             folder.mkdir(parents=True)
             for i in range(4):
@@ -50,15 +51,16 @@ def pohon_dataset(tmp_path):
     return tmp_path
 
 
-def test_build_datasets_membaca_tiga_split_dan_tiga_kelas(tf, pohon_dataset):
+def test_build_datasets_membaca_split_dan_semua_kelas(tf, pohon_dataset):
     train_ds, val_ds, test_ds = build_datasets(
         data_dir=pohon_dataset, image_size=64, batch_size=2
     )
 
-    assert train_ds.samples == 12
-    assert val_ds.samples == 12
-    assert test_ds.samples == 12
-    assert set(train_ds.class_indices) == {"mentah", "setengah_matang", "matang"}
+    n_per_kelas = len(settings.CLASS_NAMES) * 4
+    assert train_ds.samples == n_per_kelas
+    assert val_ds.samples == n_per_kelas
+    assert test_ds.samples == n_per_kelas
+    assert set(train_ds.class_indices) == set(settings.CLASS_NAMES)
 
 
 def test_build_datasets_batch_berbentuk_tensor_kategorikal(tf, pohon_dataset):
@@ -66,7 +68,8 @@ def test_build_datasets_batch_berbentuk_tensor_kategorikal(tf, pohon_dataset):
 
     gambar, label = next(iter(train_ds))
     assert tuple(gambar.shape) == (2, 64, 64, 3)
-    assert tuple(label.shape) == (2, 3)  # one-hot 3 kelas, class_mode='categorical'
+    # one-hot sebanyak kelas di settings.CLASS_NAMES, class_mode='categorical'
+    assert tuple(label.shape) == (2, len(settings.CLASS_NAMES))
     assert float(gambar.max()) <= 1.0  # rescale=1./255 aktif
 
 

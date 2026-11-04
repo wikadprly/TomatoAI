@@ -38,6 +38,7 @@ class Settings:
         "mentah",
         "setengah_matang",
         "matang",
+        "bukan_tomat",
     ]
 
     # --- Dataset ---

@@ -75,7 +75,10 @@ Kode error yang mungkin muncul:
 | 400 | File gambar kosong |
 | 413 | Ukuran file melebihi `MAX_UPLOAD_BYTES` |
 | 415 | Format gambar tidak didukung |
-| 422 | Gambar bukan satu tomat (guard khusus tomat) |
+| 422 | Gambar tidak valid sebagai satu tomat (mask kosong / bukan objek tunggal) |
+
+Catatan: foto buah atau objek yang bukan tomat dikembalikan **200** dengan
+label `bukan_tomat` (kelas keempat hasil training ulang), bukan 422.
 | 501 | Cadangan: modul pemrosesan citra/model belum diisi |
 | 503 | Bobot MobileNetV2 belum tersedia |
 

@@ -188,6 +188,8 @@ export default function HasilPage() {
                           ? "🍏"
                           : currentRecord.result.label === "setengah_matang"
                           ? "🍊"
+                          : currentRecord.result.label === "bukan_tomat"
+                          ? "🚫"
                           : "🍅"}
                       </span>
                       <p className="text-xs font-medium text-neutral-500">

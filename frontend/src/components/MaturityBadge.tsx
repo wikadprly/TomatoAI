@@ -42,6 +42,15 @@ const levelConfigs: Record<
     icon: "🍅",
     description: "Likopen merah berkembang penuh, rasa manis asam seimbang, siap dikonsumsi atau diolah.",
   },
+  bukan_tomat: {
+    name: "Bukan Tomat",
+    bgClass: "bg-neutral-100",
+    textClass: "text-neutral-700",
+    borderClass: "border-neutral-300",
+    icon: "⊘",
+    description:
+      "Objek terdeteksi bukan tomat. Foto mungkin berisi buah lain (jeruk, apel), objek, atau latar belakang — coba unggah foto satu tomat.",
+  },
 };
 
 export default function MaturityBadge({

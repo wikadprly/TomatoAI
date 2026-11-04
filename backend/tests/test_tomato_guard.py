@@ -72,3 +72,21 @@ def test_guard_bisa_dimatikan(monkeypatch) -> None:
         np.zeros((224, 224), dtype=np.uint8),
         {"mentah": 0.1, "setengah_matang": 0.1, "matang": 0.1},
     )
+
+
+def test_prediksi_bukan_tomat_lolos_tanpa_geometri() -> None:
+    # Kelas bukan_tomat memang tidak dilatih lewat mask tomat, jadi guard
+    # dilewati sepenuhnya bila model memilih kelas itu.
+    ensure_tomato(
+        None,
+        {"mentah": 0.05, "setengah_matang": 0.05, "matang": 0.10, "bukan_tomat": 0.80},
+    )
+
+
+def test_tetap_diperiksa_bila_bukan_tomat_bukan_teratas() -> None:
+    # bukan_tomat ada tapi kalah: guard bentuk tetap berlaku.
+    with pytest.raises(NotATomatoError):
+        ensure_tomato(
+            np.zeros((224, 224), dtype=np.uint8),
+            {"mentah": 0.10, "setengah_matang": 0.10, "matang": 0.70, "bukan_tomat": 0.10},
+        )

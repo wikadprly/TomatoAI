@@ -91,7 +91,7 @@ def predict_proba(model, image: Image.Image) -> dict[str, float]:
     img_array = img_array / 255.0
 
     # Prediksi probabilitas
-    preds = model.predict(img_array, verbose=0)[0]  # shape: (3,)
+    preds = model.predict(img_array, verbose=0)[0]  # shape: (n_kelas,)
 
     # Map ke dict {class_name: probability}
     probs: dict[str, float] = {}
@@ -134,6 +134,15 @@ def predict_label(
     # Ambil kelas dengan probabilitas tertinggi
     best_class = max(probs, key=probs.get)
     confidence = probs[best_class]
+
+    # Jika prediksi bukan_tomat, return 200 tanpa guard bentuk
+    if best_class == "bukan_tomat":
+        return PredictionResponse(
+            label="bukan_tomat",
+            confidence=confidence,
+            probabilities=probs,
+            color_analysis=color_analysis,
+        )
 
     return PredictionResponse(
         label=best_class,

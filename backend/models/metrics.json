@@ -1,20 +1,55 @@
 {
-  "model": "models/mobilenetv2_tomat.keras",
-  "generated_at": "2026-10-23T00:00:00+00:00",
+  "model": "/home/qihh/Documents/Tugas Besar Rekayasa AI & Pengolahan Citra/TomatoAI/backend/models/mobilenetv2_tomat.keras",
+  "generated_at": "2026-11-04T01:29:33+00:00",
   "image_size": 224,
-  "class_names": ["mentah", "setengah_matang", "matang"],
-  "test_set_size": 677,
+  "class_names": [
+    "mentah",
+    "setengah_matang",
+    "matang",
+    "bukan_tomat"
+  ],
+  "test_set_size": 767,
   "metrics": {
-    "accuracy": 0.9232,
-    "f1_macro": 0.918
+    "accuracy": 0.9361147327249022,
+    "precision": 0.9305726063669736,
+    "recall": 0.9538807189542484,
+    "f1": 0.9412446554471995
   },
-  "confusion_matrix": null,
+  "confusion_matrix": [
+    [
+      129,
+      7,
+      0,
+      0
+    ],
+    [
+      16,
+      369,
+      20,
+      0
+    ],
+    [
+      0,
+      6,
+      130,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      90
+    ]
+  ],
   "confusion_matrix_labels": {
     "rows": "label_sebenarnya",
     "columns": "prediksi",
-    "order": ["mentah", "setengah_matang", "matang"]
+    "order": [
+      "mentah",
+      "setengah_matang",
+      "matang",
+      "bukan_tomat"
+    ]
   },
-  "classification_report": null,
-  "source": "dicatat dari hasil evaluasi training_colab.ipynb (test set 677 citra); angka asli tercatat di README.md dan audit.md",
-  "note": "confusion_matrix & classification_report null karena metrik awal dicatat tanpa ekspor penuh. Regenerasi lengkap saat dataset tersedia: python -m scripts.export_metrics"
+  "classification_report": "                 precision    recall  f1-score   support\n\n         mentah     0.8897    0.9485    0.9181       136\nsetengah_matang     0.9660    0.9111    0.9377       405\n         matang     0.8667    0.9559    0.9091       136\n    bukan_tomat     1.0000    1.0000    1.0000        90\n\n       accuracy                         0.9361       767\n      macro avg     0.9306    0.9539    0.9412       767\n   weighted avg     0.9388    0.9361    0.9365       767\n"
 }

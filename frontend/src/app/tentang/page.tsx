@@ -51,7 +51,7 @@ const techStack = [
   {
     category: "Deep Learning",
     tool: "MobileNetV2 (TensorFlow/Keras)",
-    desc: "Arsitektur Convolutional Neural Network (CNN) ringan dengan transfer learning, menerima input citra 224×224 piksel untuk klasifikasi 3 kelas kematangan.",
+    desc: "Arsitektur Convolutional Neural Network (CNN) ringan dengan transfer learning, menerima input citra 224×224 piksel untuk klasifikasi 3 kelas kematangan plus kelas penolakan bukan_tomat.",
   },
   {
     category: "Backend REST API",
@@ -85,7 +85,7 @@ export default function TentangPage() {
           <ul className="list-disc list-inside space-y-1">
             <li><strong>Post-Harvest Only:</strong> Dikhususkan untuk tomat yang telah dipetik di atas meja/wadah dengan latar belakang kontras/polos (bukan tomat di atas pohon / on-vine).</li>
             <li>Pencahayaan foto diasumsikan memadai dan tidak ada bayangan gelap ekstrem yang menutupi tomat.</li>
-            <li>Klasifikasi berfokus pada 3 kelas utama: <em>Mentah</em>, <em>Setengah Matang</em>, dan <em>Matang</em>.</li>
+            <li>Klasifikasi berfokus pada 3 kelas kematangan: <em>Mentah</em>, <em>Setengah Matang</em>, dan <em>Matang</em>, ditambah kelas penolakan <em>Bukan Tomat</em> agar buah atau objek lain tidak dipaksa jadi hasil kematangan.</li>
           </ul>
         </div>
       </section>

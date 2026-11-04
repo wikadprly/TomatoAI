@@ -62,6 +62,16 @@ DEFAULT_CLASS_ALIASES: dict[str, set[str]] = {
         "red",
         "red ripe",
     },
+    # Kelas tambahan: bukan tomat (untuk jeruk,apel,pear)
+    "bukan_tomat": {
+        "bukan_tomat",
+        "jeruk",
+        "orange",
+        "apel",
+        "apple",
+        "pear",
+        "pir",
+    },
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}

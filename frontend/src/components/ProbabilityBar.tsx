@@ -28,6 +28,11 @@ const classMeta: Record<
     barColor: "bg-[#CB5B5B]",
     textColor: "text-[#CB5B5B]",
   },
+  bukan_tomat: {
+    name: "Bukan Tomat",
+    barColor: "bg-[#9CA3AF]",
+    textColor: "text-[#6B7280]",
+  },
 };
 
 export default function ProbabilityBar({
@@ -36,8 +41,8 @@ export default function ProbabilityBar({
 }: ProbabilityBarProps) {
   const normalizedPredicted = (predictedLabel || "").toLowerCase().replace(/\s+/g, "_");
 
-  // Susun sesuai urutan standar: mentah, setengah_matang, matang
-  const classes = ["mentah", "setengah_matang", "matang"];
+  // Susun sesuai urutan standar: mentah, setengah_matang, matang, bukan_tomat
+  const classes = ["mentah", "setengah_matang", "matang", "bukan_tomat"];
 
   return (
     <div className="space-y-3.5">

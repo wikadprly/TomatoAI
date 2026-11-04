@@ -4,10 +4,12 @@ Ini **bukan model pembelajaran**. Ia memakai geometri mask segmentasi dan
 keyakinan model untuk menyaring kasus yang jelas bukan tomat (pemandangan,
 orang, objek non-bulat) serta prediksi yang ragu.
 
-Batasannya jujur: apel/jeruk yang bulat dan berwarna bisa tetap lolos, karena
-model hanya punya 3 kelas kematangan dan tidak punya kelas "bukan_tomat".
-Untuk membedakan buah lain secara andal, model perlu dilatih ulang dengan
-kelas negatif tersebut. Guard ini adalah lapisan pengaman, bukan pengganti.
+Batasannya jujur: guard ini tetap lapisan pengaman, bukan pengganti model.
+Model kini punya kelas keempat ``bukan_tomat`` sehingga jeruk/apel/objek
+lain biasanya langsung ditolak oleh model. Guard tetap menangani kasus yang
+lolos model: mask kosong, objek bukan satu tomat, atau prediksi yang ragu.
+Bila prediksi teratas adalah ``bukan_tomat``, validasi bentuk dilewati —
+kelas itu memang tidak dilatih lewat mask tomat.
 """
 
 from __future__ import annotations
@@ -161,6 +163,11 @@ def ensure_tomato(
         NotATomatoError: bila gambar tidak lolos batasan lingkungan tomat.
     """
     if not settings.TOMATO_GUARD_ENABLED:
+        return
+
+    # Prediksi teratas bukan_tomat: lewati validasi bentuk, karena kelas ini
+    # dilatih dari foto buah utuh, bukan dari mask segmentasi tomat.
+    if probabilities.get("bukan_tomat", 0) == max(probabilities.values(), default=0):
         return
 
     _periksa_bentuk(mask)

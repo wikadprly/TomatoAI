@@ -5,13 +5,13 @@ Panduan ini sudah diverifikasi di Windows (Python 3.13 + Node). Prinsipnya:
 
 ## Yang dibutuhkan server
 
-| Perlu ✅ | Tidak perlu ❌ |
-|---|---|
-| `backend/models/mobilenetv2_tomat.keras` (bawa dari repo) | `datasets/` (ratusan MB) |
-| `backend/models/metrics.json` (dokumentasi metrik) | `training_colab.ipynb` |
+| Perlu ✅                                                                        | Tidak perlu ❌                                   |
+| ------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `backend/models/mobilenetv2_tomat.keras` (bawa dari repo)                     | `datasets/` (ratusan MB)                       |
+| `backend/models/metrics.json` (dokumentasi metrik)                            | `training_colab.ipynb`                         |
 | `requirements-prod.txt` (atau `requirements.txt` + `requirements-ml.txt`) | `training.py`, `evaluation.py`, `scripts/` |
-| Kode `backend/app/` (API + pipeline inferensi) | — |
-| `frontend/` (build Next.js) | — |
+| Kode `backend/app/` (API + pipeline inferensi)                                | —                                               |
+| `frontend/` (build Next.js)                                                   | —                                               |
 
 > Catatan: `training.py`/`evaluation.py` ada di dalam `app/` tapi **tidak pernah
 > dipanggil** oleh endpoint API — hanya dipakai saat training manual. Aman dibawa
@@ -36,10 +36,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 **Cek sehat:** `GET /api/v1/health` harus `"model_loaded": true`.
 
-| `model_loaded` | Artinya |
-|---|---|
-| `true` | AI siap — `/predict` akan memakai MobileNetV2 |
-| `false` | TF/bobot tidak ada → `/predict` balas 503 → frontend jatuh ke heuristik |
+| `model_loaded` | Artinya                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| `true`         | AI siap — `/predict` akan memakai MobileNetV2                            |
+| `false`        | TF/bobot tidak ada → `/predict` balas 503 → frontend jatuh ke heuristik |
 
 ## 2. Deploy backend gratis via Docker (Hugging Face Spaces)
 

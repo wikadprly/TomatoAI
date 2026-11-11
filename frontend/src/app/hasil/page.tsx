@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
+import { useState, useSyncExternalStore } from "react";
 import PageHeader from "@/components/PageHeader";
-import MaturityBadge, { getMaturityDescription } from "@/components/MaturityBadge";
+import MaturityBadge, {
+  getMaturityDescription,
+} from "@/components/MaturityBadge";
 import ProbabilityBar from "@/components/ProbabilityBar";
+import ConfidenceGauge from "@/components/ConfidenceGauge";
 import ColorAnalysisCard from "@/components/ColorAnalysisCard";
+import SegmentationPanel from "@/components/SegmentationPanel";
 import HistoryList from "@/components/HistoryList";
 import {
   clearDetectionHistory,
@@ -15,19 +20,39 @@ import {
   getMockDetection,
   saveDetectionResult,
 } from "@/lib/storage";
-import type { DetectionRecord, MaturityLevel } from "@/lib/types";
+import { getClassMeta } from "@/lib/maturity";
+import type { DetectionRecord, DetectionSource, MaturityLevel } from "@/lib/types";
+
+const demoButtons: { level: MaturityLevel; label: string }[] = [
+  { level: "mentah", label: "Mentah" },
+  { level: "setengah_matang", label: "1/2 Matang" },
+  { level: "matang", label: "Matang" },
+];
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
 
 export default function HasilPage() {
   // Data diinisialisasi langsung dari localStorage via lazy initializer
-  // (bukan lewat setState di dalam effect — dilarang react-hooks/
-  // set-state-in-effect). render awal aman karena diblokir isClient di bawah.
-  const [stored] = useState(() => getLatestDetection());
+  // (bukan lewat setState di dalam effect). render awal aman karena
+  // diblokir isClient di bawah.
+  const [currentRecord, setCurrentRecord] = useState<DetectionRecord | null>(
+    () => getLatestDetection()
+  );
   const [history, setHistory] = useState<DetectionRecord[]>(() =>
     getDetectionHistory()
   );
-  const [currentRecord, setCurrentRecord] = useState<DetectionRecord | null>(
-    () => stored ?? getMockDetection("matang")
-  );
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const reduceMotion = useReducedMotion();
 
   // True hanya di browser; dipakai untuk menunda render yang membaca
   // localStorage supaya tidak terjadi hydration mismatch dengan HTML server.
@@ -37,31 +62,26 @@ export default function HasilPage() {
     () => false
   );
 
-  // isDemoMode diturunkan dari sumber record ("demo") — id mock_ juga
-  // dicakup untuk record lama — supaya banner tetap muncul setelah reload.
-  const isDemoMode = currentRecord
-    ? currentRecord.source === "demo" || currentRecord.id.startsWith("mock_")
-    : false;
+  const source: DetectionSource = currentRecord?.source ?? "model";
 
   const handleSelectRecord = (record: DetectionRecord) => {
     setCurrentRecord(record);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   };
 
   const handleDeleteItem = (id: string) => {
     const updated = deleteHistoryItem(id);
     setHistory(updated);
     if (currentRecord?.id === id) {
-      setCurrentRecord(updated[0] || getMockDetection("matang"));
+      setCurrentRecord(updated[0] ?? null);
     }
   };
 
   const handleClearAll = () => {
-    if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat deteksi?")) {
-      clearDetectionHistory();
-      setHistory([]);
-      setCurrentRecord(getMockDetection("matang"));
-    }
+    clearDetectionHistory();
+    setHistory([]);
+    setCurrentRecord(null);
+    setConfirmClear(false);
   };
 
   const handleLoadDemo = (level: MaturityLevel) => {
@@ -73,6 +93,29 @@ export default function HasilPage() {
     setHistory(getDetectionHistory());
   };
 
+  const handleCopySummary = async () => {
+    if (!currentRecord) return;
+
+    const meta = getClassMeta(currentRecord.result.label);
+    const date = new Date(currentRecord.timestamp).toLocaleString("id-ID");
+    const summary = [
+      `TomatoAI — Hasil Klasifikasi`,
+      `Kelas: ${meta.name}`,
+      `Keyakinan: ${(currentRecord.result.confidence * 100).toFixed(1)}%`,
+      `Sumber: ${source === "model" ? "MobileNetV2" : source === "heuristic" ? "Heuristik warna (bukan AI)" : "Data sampel demo"}`,
+      `Waktu: ${date}`,
+      `Catatan: hasil ini penunjang keputusan, bukan pengganti penilaian manual.`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   if (!isClient) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12">
@@ -80,226 +123,347 @@ export default function HasilPage() {
           title="Hasil Klasifikasi"
           description="Memuat data klasifikasi tingkat kematangan tomat..."
         />
-        <div className="animate-pulse rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-500">
-          Memuat hasil...
+        <div className="space-y-3">
+          <div className="skeleton-shimmer h-56 rounded-2xl border border-neutral-200 bg-white" />
+          <div className="skeleton-shimmer h-40 rounded-2xl border border-neutral-200 bg-white" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
-      {/* Header & Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="mx-auto max-w-4xl space-y-8 px-4 py-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Hasil Klasifikasi"
           description={
-            currentRecord?.source === "heuristic"
+            source === "heuristic"
               ? "Hasil analisis warna heuristik yang dijalankan di browser — MobileNetV2 tidak dijalankan."
               : "Evaluasi tingkat kematangan berbasis MobileNetV2 dan Pengolahan Citra HSV."
           }
         />
-        <div className="flex items-center gap-2">
-          <Link
-            href="/deteksi"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#3F7D58] px-4 py-2.5 text-sm font-medium text-white shadow-xs hover:bg-[#326446] transition-colors"
-          >
-            <span>Mulai Deteksi Tomat</span>
-          </Link>
-        </div>
+        <Link
+          href="/deteksi"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover"
+        >
+          Mulai Deteksi Tomat
+        </Link>
       </div>
 
       {/* Heuristic (offline) Notification Banner */}
-      {currentRecord?.source === "heuristic" && (
+      {source === "heuristic" && (
         <div
           role="status"
-          className="rounded-xl border border-amber-300 bg-amber-100/80 p-4 text-xs text-amber-900 flex items-start gap-2.5 shadow-2xs"
+          className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-2xs"
         >
-          <span className="text-base">⚠️</span>
+          <span aria-hidden="true" className="text-base">
+            ⚠
+          </span>
           <div>
             <p className="font-semibold">
               Hasil Heuristik Warna (Browser, Offline) — Bukan Output AI
             </p>
-            <p className="text-amber-800/90 text-[11px] mt-0.5">
-              Backend MobileNetV2 tidak terjangkau, sehingga angka di bawah
-              dihitung secara lokal dari analisis warna HSV di browser Anda.
+            <p className="mt-0.5 text-xs text-amber-800">
+              Anda memilih analisis lokal karena backend MobileNetV2 tidak
+              terjangkau. Angka di bawah dihitung dari analisis warna HSV di
+              browser Anda.
             </p>
           </div>
         </div>
       )}
 
       {/* Demo Notification Banner */}
-      {isDemoMode && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <div>
-              <p className="font-semibold">Menampilkan Data Sampel Demonstrasi</p>
-              <p className="text-amber-800/90 text-[11px] mt-0.5">
-                Ini adalah data pratinjau agar Anda dapat melihat tampilan visualisasi lengkap sebelum mengunggah foto asli.
-              </p>
-            </div>
+      {source === "demo" && (
+        <div className="flex flex-col justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 shadow-2xs sm:flex-row sm:items-center">
+          <div>
+            <p className="font-semibold">Menampilkan Data Sampel Demonstrasi</p>
+            <p className="mt-0.5 text-xs text-amber-800">
+              Ini bukan hasil model. Data pratinjau ini hanya untuk melihat
+              tampilan visualisasi sebelum Anda mengunggah foto asli.
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <span className="text-neutral-500 text-[11px]">Pilih sampel:</span>
-            <button
-              type="button"
-              onClick={() => handleLoadDemo("mentah")}
-              className="rounded-md border border-[#D1E7CB] bg-white px-2.5 py-1 font-medium text-[#3F7D58] hover:bg-[#F0F7EE]"
-            >
-              Mentah
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLoadDemo("setengah_matang")}
-              className="rounded-md border border-[#FCE8B0] bg-white px-2.5 py-1 font-medium text-[#B88710] hover:bg-[#FEF9EB]"
-            >
-              1/2 Matang
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLoadDemo("matang")}
-              className="rounded-md border border-[#F8D2D2] bg-white px-2.5 py-1 font-medium text-[#CB5B5B] hover:bg-[#FDF2F2]"
-            >
-              Matang
-            </button>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            <span className="text-xs text-neutral-600">Ganti sampel:</span>
+            {demoButtons.map(({ level, label }) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => handleLoadDemo(level)}
+                className="rounded-md border border-amber-200 bg-white px-2.5 py-1 font-medium text-amber-900 transition-colors hover:bg-amber-100"
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {currentRecord && (
-        <div className="space-y-6">
+      {currentRecord ? (
+        <motion.div
+          key={currentRecord.id}
+          variants={containerVariants}
+          initial={reduceMotion ? false : "hidden"}
+          animate="show"
+          className="space-y-6"
+        >
           {/* Main Hero Result Card */}
-          <div className="relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-6 sm:p-8 shadow-xs">
+          <motion.div
+            variants={itemVariants}
+            className="relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs sm:p-8"
+          >
             <div className="grid gap-6 md:grid-cols-12 md:items-center">
               {/* Image Preview */}
-              <div className="md:col-span-5 flex flex-col items-center">
-                <div className="relative w-full aspect-4/3 max-w-sm rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 flex items-center justify-center shadow-inner">
+              <div className="flex flex-col items-center md:col-span-5">
+                <div className="relative flex aspect-4/3 w-full max-w-sm items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-inner">
                   {currentRecord.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={currentRecord.imageUrl}
-                      alt={currentRecord.fileName || "Hasil Tomat"}
+                      alt={`Foto deteksi ${currentRecord.fileName || "tomat"}`}
                       className="h-full w-full object-contain"
                     />
                   ) : (
-                    <div className="text-center p-6 text-neutral-400">
-                      <span className="text-5xl block mb-2">
-                        {currentRecord.result.label === "mentah"
-                          ? "🍏"
-                          : currentRecord.result.label === "setengah_matang"
-                          ? "🍊"
-                          : currentRecord.result.label === "bukan_tomat"
-                          ? "🚫"
-                          : "🍅"}
-                      </span>
-                      <p className="text-xs font-medium text-neutral-500">
+                    <div className="p-6 text-center text-neutral-500">
+                      <p className="text-xs font-medium">
                         {currentRecord.fileName || "Foto Deteksi"}
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Pratinjau gambar tidak tersedia
                       </p>
                     </div>
                   )}
-                  <div className="absolute top-2.5 right-2.5">
+                  <div className="absolute right-2.5 top-2.5">
                     <MaturityBadge level={currentRecord.result.label} size="sm" />
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between w-full max-w-sm text-xs text-neutral-500 px-1">
-                  <span className="truncate max-w-[200px]">
+                <div className="mt-2.5 flex w-full max-w-sm items-center justify-between px-1 text-xs text-neutral-600">
+                  <span className="max-w-[200px] truncate">
                     {currentRecord.fileName || "Foto Tomat"}
                   </span>
                   <span>
-                    {new Date(currentRecord.timestamp).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {new Date(currentRecord.timestamp).toLocaleDateString(
+                      "id-ID",
+                      { day: "numeric", month: "short", year: "numeric" }
+                    )}
                   </span>
                 </div>
               </div>
 
               {/* Prediction Summary & Confidence */}
-              <div className="md:col-span-7 flex flex-col justify-center space-y-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+              <div className="flex flex-col justify-center space-y-4 md:col-span-7">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600">
                       Tingkat Kematangan Terdeteksi
                     </span>
-                  </div>
 
-                  <div className="mt-1 flex items-baseline gap-3">
-                    <h2 className="text-3xl font-extrabold capitalize text-neutral-900 tracking-tight">
-                      {currentRecord.result.label.replace("_", " ")}
+                    <h2 className="mt-1 text-3xl font-extrabold capitalize tracking-tight text-brand-text">
+                      {getClassMeta(currentRecord.result.label).name}
                     </h2>
-                    <span className="text-sm font-semibold text-[#3F7D58]">
-                      {(currentRecord.result.confidence * 100).toFixed(1)}%
-                      {currentRecord.source === "heuristic"
-                        ? " Skor Heuristik"
-                        : " Keyakinan"}
-                    </span>
+
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-neutral-600">
+                      {getMaturityDescription(currentRecord.result.label)}
+                    </p>
                   </div>
 
-                  <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
-                    {getMaturityDescription(currentRecord.result.label)}
-                  </p>
+                  <ConfidenceGauge
+                    value={currentRecord.result.confidence}
+                    level={currentRecord.result.label}
+                    caption={
+                      source === "heuristic"
+                        ? "Skor heuristik"
+                        : source === "demo"
+                          ? "Keyakinan (demo)"
+                          : "Keyakinan model"
+                    }
+                    size={148}
+                  />
                 </div>
 
                 {/* Probabilities Breakdown */}
                 <div className="rounded-xl border border-neutral-100 bg-neutral-50/70 p-4">
-                  <h4 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
-                    {currentRecord.source === "heuristic"
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-700">
+                    {source === "heuristic"
                       ? "Distribusi Keyakinan — Heuristik Warna (Browser, Offline)"
-                      : currentRecord.source === "demo"
+                      : source === "demo"
                         ? "Distribusi Keyakinan — Data Sampel Demo"
                         : "Distribusi Keyakinan MobileNetV2"}
-                  </h4>
+                  </h3>
                   <ProbabilityBar
                     probabilities={currentRecord.result.probabilities}
                     predictedLabel={currentRecord.result.label}
                   />
                 </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopySummary}
+                    className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                  >
+                    {copied ? "Ringkasan tersalin ✓" : "Salin ringkasan"}
+                  </button>
+                  {currentRecord.imageUrl && (
+                    <a
+                      href={currentRecord.imageUrl}
+                      download={`tomatoai_${currentRecord.result.label}.jpg`}
+                      className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                    >
+                      Unduh foto
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Visual segmentasi: apa yang dilihat model */}
+          <motion.div variants={itemVariants}>
+            <SegmentationPanel
+              originalUrl={currentRecord.imageUrl}
+              segmentation={currentRecord.result.segmentation}
+              shapeMetrics={currentRecord.result.shape_metrics}
+              inputMode={currentRecord.result.input_mode}
+            />
+          </motion.div>
+
+          {/* HSV Color Analysis Details */}
+          <motion.div variants={itemVariants}>
+            <ColorAnalysisCard analysis={currentRecord.result.color_analysis} />
+          </motion.div>
+
+          <motion.p
+            variants={itemVariants}
+            className="rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-4 text-xs leading-relaxed text-neutral-600"
+          >
+            Skor keyakinan menunjukkan seberapa yakin model terhadap kelas yang
+            dipilih, bukan jaminan tingkat kematangan sebenarnya. Gunakan hasil
+            ini sebagai penunjang keputusan.
+          </motion.p>
+
+          {/* History List Section */}
+          <motion.div variants={itemVariants}>
+            <HistoryList
+              history={history}
+              activeId={currentRecord.id}
+              onSelectRecord={handleSelectRecord}
+              onDeleteItem={handleDeleteItem}
+              onClearAll={() => setConfirmClear(true)}
+            />
+          </motion.div>
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Empty state: tidak ada hasil sama sekali */}
+          <div className="rounded-2xl border border-dashed border-brand-border bg-white p-8 text-center sm:p-12">
+            <div
+              aria-hidden="true"
+              className="mx-auto flex h-14 w-14 animate-breathe items-center justify-center rounded-full bg-mentah-bg text-2xl"
+            >
+              🍅
+            </div>
+            <h2 className="mt-4 text-lg font-semibold text-brand-text">
+              Belum ada hasil klasifikasi
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
+              Unggah atau ambil foto satu tomat untuk memulai. Hasil dan riwayat
+              deteksi akan muncul di halaman ini.
+            </p>
+            <Link
+              href="/deteksi"
+              className="mt-6 inline-block rounded-xl bg-brand-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-brand-primary-hover"
+            >
+              Mulai Deteksi
+            </Link>
+
+            <div className="mt-6 border-t border-neutral-100 pt-5">
+              <p className="text-xs text-neutral-600">
+                Atau lihat contoh tampilan dengan data sampel (bukan hasil
+                model):
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {demoButtons.map(({ level, label }) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => handleLoadDemo(level)}
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                  >
+                    Contoh {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* HSV Color Analysis Details */}
-          <ColorAnalysisCard analysis={currentRecord.result.color_analysis} />
-
-          {/* Quick Demo Switcher Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-4 text-xs text-neutral-500">
-            <span>Uji coba sampel klasifikasi lainnya (ilustrasi):</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleLoadDemo("mentah")}
-                className="rounded-lg border border-[#D1E7CB] bg-white px-3 py-1.5 font-medium text-[#3F7D58] hover:bg-[#F0F7EE] transition-colors"
-              >
-                🌱 Sampel Mentah
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLoadDemo("setengah_matang")}
-                className="rounded-lg border border-[#FCE8B0] bg-white px-3 py-1.5 font-medium text-[#B88710] hover:bg-[#FEF9EB] transition-colors"
-              >
-                ⚡ Sampel 1/2 Matang
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLoadDemo("matang")}
-                className="rounded-lg border border-[#F8D2D2] bg-white px-3 py-1.5 font-medium text-[#CB5B5B] hover:bg-[#FDF2F2] transition-colors"
-              >
-                🍅 Sampel Matang
-              </button>
-            </div>
-          </div>
-
-          {/* History List Section */}
           <HistoryList
             history={history}
+            activeId={null}
             onSelectRecord={handleSelectRecord}
             onDeleteItem={handleDeleteItem}
-            onClearAll={handleClearAll}
+            onClearAll={() => setConfirmClear(true)}
           />
-        </div>
+        </motion.div>
       )}
+
+      {/* Konfirmasi hapus semua (bukan window.confirm) */}
+      <AnimatePresence>
+        {confirmClear && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            onClick={() => setConfirmClear(false)}
+          >
+            <motion.div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="confirm-clear-title"
+              aria-describedby="confirm-clear-desc"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 6 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg"
+            >
+              <h2
+                id="confirm-clear-title"
+                className="text-base font-semibold text-brand-text"
+              >
+                Hapus seluruh riwayat?
+              </h2>
+              <p id="confirm-clear-desc" className="mt-2 text-sm text-neutral-600">
+                Semua riwayat deteksi yang tersimpan di perangkat ini akan
+                dihapus permanen.
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                  className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-95"
+                >
+                  Hapus Semua
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

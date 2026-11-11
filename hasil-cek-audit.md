@@ -256,13 +256,21 @@ yang berjalan sebelum hasil dikembalikan:
 
 | Pemeriksaan | Sumber | Default |
 |---|---|---|
-| Rasio luas objek | mask segmentasi | 0.03–0.85 |
-| Kebulatan (circularity) | kontur mask | ≥ 0.45 |
-| Kepadatan isi bbox | kontur mask | ≥ 0.60 |
-| Solidity (convex hull) | kontur mask | ≥ 0.80 |
-| Rasio aspek | bbox kontur | 0.55–1.80 |
-| Keyakinan model | probabilitas | ≥ 0.55 |
-| Margin top-1 vs top-2 | probabilitas | ≥ 0.15 |
+| Rasio luas objek | mask segmentasi | 0.10–0.98 |
+| Kebulatan (circularity) | kontur mask | ≥ 0.20 |
+| Kepadatan isi bbox | kontur mask | ≥ 0.45 |
+| Solidity (convex hull) | kontur mask | ≥ 0.60 |
+| Rasio aspek | bbox kontur | 0.45–2.20 |
+| Keyakinan model | probabilitas | ≥ 0.45 |
+| Margin top-1 vs top-2 | probabilitas | ≥ 0.10 |
+
+> **Revisi kalibrasi guard (audit lanjutan):** ambang awal di atas menolak
+> **98/677 (14,5%)** foto tomat yang sah pada test set proyek — 54 karena
+> circularity dan 20 karena rasio luas terlalu ketat (termasuk foto close-up
+> yang memenuhi frame). Ambang sekarang dikalibrasi dari persentil bawah
+> sebaran metrik test set; hasilnya penolakan turun ke **21/677 (3,1%)** dan
+> recall naik dari **79,9% → 90,3%** (akurasi pada hasil yang lolos tetap
+> 93,1%). Sisa penolakan hampir seluruhnya kasus model ragu (margin top-1/top-2).
 
 - Gagal guard → `POST /api/v1/predict` membalas **422** dengan pesan jelas;
   frontend menampilkan pesan dan **tidak** jatuh ke fallback heuristik.

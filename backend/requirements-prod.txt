@@ -11,8 +11,8 @@ pydantic==2.10.4
 
 # Pengolahan citra (headless: tanpa dependensi GUI/libGL)
 pillow==11.1.0
-numpy==2.2.1
+numpy==2.0.2
 opencv-python-headless==4.10.0.84
 
 # Runtime machine learning untuk inferensi MobileNetV2
-tensorflow==2.21.0
+tensorflow==2.18.0

@@ -13,7 +13,8 @@ Alur:
        - `crop`: hasil potong bbox mask dari resolusi penuh,
        - `segment`: citra hasil masking (latar hitam);
     5. klasifikasi MobileNetV2;
-    6. guard "khusus tomat" (validasi bentuk mask + keyakinan model).
+    6. guard "khusus tomat" (validasi bentuk mask + keyakinan model);
+    7. artefak visual (mask, citra input model, overlay kontur) untuk frontend.
 
 Default `original` dipertahankan karena model dilatih pada citra utuh.
 Setelah `scripts/evaluate_input_modes.py` dijalankan pada test set, mode
@@ -21,12 +22,14 @@ Setelah `scripts/evaluate_input_modes.py` dijalankan pada test set, mode
 """
 
 from app.core.config import settings
-from app.schemas.prediction import PredictionResponse
+from app.schemas.prediction import PredictionResponse, ShapeMetrics
+from app.services.image_processing.artifacts import build_segmentation_images
 from app.services.image_processing.color_analysis import analyze_color
 from app.services.image_processing.preprocessing import load_image_raw
 from app.services.image_processing.roi import prepare_model_input
 from app.services.image_processing.segmentation import segment_tomato_with_mask
 from app.services.model.predictor import model_is_ready, predict_label
+from app.services.tomato_guard import shape_metrics
 
 
 class ModelNotReadyError(RuntimeError):
@@ -42,13 +45,15 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
         3. analisis warna area tomat (metadata),
         4. pilih input model sesuai `settings.INFERENCE_INPUT_MODE`,
         5. klasifikasi dengan MobileNetV2,
-        6. guard "khusus tomat".
+        6. guard "khusus tomat",
+        7. bangun artefak visual segmentasi.
 
     Args:
         image_bytes: isi file gambar hasil upload pengguna.
 
     Returns:
-        Hasil klasifikasi beserta confidence score dan analisis warna.
+        Hasil klasifikasi beserta confidence score, analisis warna, dan
+        visual segmentasi (bila `SEGMENTATION_IMAGES_ENABLED` aktif).
 
     Raises:
         ModelNotReadyError: bila bobot MobileNetV2 belum ada di disk.
@@ -78,4 +83,21 @@ def classify_tomato(image_bytes: bytes) -> PredictionResponse:
     )
 
     # `mask` diteruskan ke guard "khusus tomat" (validasi bentuk objek).
-    return predict_label(model_input, color_analysis=color_analysis, mask=mask)
+    result = predict_label(model_input, color_analysis=color_analysis, mask=mask)
+
+    # Artefak visual dilampirkan SETELAH guard lolos, jadi penolakan tetap
+    # ringan (tanpa encode gambar) dan user hanya menerima visual yang valid.
+    metrics = shape_metrics(mask) if mask is not None else None
+    segmentation = (
+        build_segmentation_images(model_input, mask, image)
+        if settings.SEGMENTATION_IMAGES_ENABLED
+        else None
+    )
+
+    return result.model_copy(
+        update={
+            "segmentation": segmentation,
+            "shape_metrics": ShapeMetrics(**metrics) if metrics else None,
+            "input_mode": settings.INFERENCE_INPUT_MODE,
+        }
+    )

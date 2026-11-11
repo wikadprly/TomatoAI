@@ -1,59 +1,37 @@
-import React from "react";
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
+import { CLASS_ORDER, getClassMeta } from "@/lib/maturity";
+import type { MaturityLevel } from "@/lib/types";
 
 interface ProbabilityBarProps {
-  probabilities: Record<string, number>;
+  probabilities: Partial<Record<MaturityLevel, number>>;
   predictedLabel: string;
 }
 
-const classMeta: Record<
-  string,
-  {
-    name: string;
-    barColor: string;
-    textColor: string;
-  }
-> = {
-  mentah: {
-    name: "Mentah",
-    barColor: "bg-[#6FA665]",
-    textColor: "text-[#3F7D58]",
-  },
-  setengah_matang: {
-    name: "Setengah Matang",
-    barColor: "bg-[#E8BE4C]",
-    textColor: "text-[#B88710]",
-  },
-  matang: {
-    name: "Matang",
-    barColor: "bg-[#CB5B5B]",
-    textColor: "text-[#CB5B5B]",
-  },
-  bukan_tomat: {
-    name: "Bukan Tomat",
-    barColor: "bg-[#9CA3AF]",
-    textColor: "text-[#6B7280]",
-  },
-};
-
+/**
+ * Distribusi keyakinan per kelas.
+ *
+ * Bar tumbuh dari 0 saat pertama dirender (bukan langsung muncul di lebar
+ * akhir), dengan jeda bertahap antar kelas supaya urutannya terbaca.
+ */
 export default function ProbabilityBar({
   probabilities,
   predictedLabel,
 }: ProbabilityBarProps) {
-  const normalizedPredicted = (predictedLabel || "").toLowerCase().replace(/\s+/g, "_");
+  const reduceMotion = useReducedMotion();
 
-  // Susun sesuai urutan standar: mentah, setengah_matang, matang, bukan_tomat
-  const classes = ["mentah", "setengah_matang", "matang", "bukan_tomat"];
+  const normalizedPredicted = (predictedLabel || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_");
 
   return (
     <div className="space-y-3.5">
-      {classes.map((cls) => {
+      {CLASS_ORDER.map((cls, index) => {
         const prob = probabilities[cls] ?? 0;
         const percentage = (prob * 100).toFixed(1);
-        const meta = classMeta[cls] || {
-          name: cls,
-          barColor: "bg-neutral-500",
-          textColor: "text-neutral-700",
-        };
+        const meta = getClassMeta(cls);
         const isWinner = cls === normalizedPredicted;
 
         return (
@@ -61,21 +39,35 @@ export default function ProbabilityBar({
             <div className="flex items-center justify-between text-xs">
               <span
                 className={`font-medium ${
-                  isWinner ? `${meta.textColor} font-semibold` : "text-neutral-600"
+                  isWinner ? `${meta.textClass} font-semibold` : "text-neutral-700"
                 }`}
               >
                 {meta.name} {isWinner && "✓"}
               </span>
-              <span className={`tabular-nums ${isWinner ? "font-bold text-neutral-800" : "text-neutral-500"}`}>
+              <span
+                className={`tabular-nums ${
+                  isWinner ? "font-bold text-neutral-800" : "text-neutral-600"
+                }`}
+              >
                 {percentage}%
               </span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-100 p-0.5">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${meta.barColor} ${
+            <div
+              className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-100 p-0.5"
+              role="img"
+              aria-label={`${meta.name}: ${percentage} persen`}
+            >
+              <motion.div
+                className={`h-full rounded-full ${meta.barClass} ${
                   isWinner ? "opacity-100" : "opacity-40"
                 }`}
-                style={{ width: `${Number(percentage)}%` }}
+                initial={reduceMotion ? false : { width: 0 }}
+                animate={{ width: `${Number(percentage)}%` }}
+                transition={{
+                  duration: 0.8,
+                  delay: 0.1 + index * 0.07,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               />
             </div>
           </div>

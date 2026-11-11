@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import ApiStatus from "@/components/ApiStatus";
 import ImageDropzone from "@/components/ImageDropzone";
 import PageHeader from "@/components/PageHeader";
 
@@ -10,11 +11,12 @@ export const metadata: Metadata = {
 
 export default function DeteksiPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-12">
       <PageHeader
         title="Deteksi Kematangan"
         description="Pilih satu foto tomat. Hasilnya akan muncul di halaman Hasil."
       />
+      <ApiStatus />
       <ImageDropzone />
     </div>
   );

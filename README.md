@@ -57,8 +57,8 @@ Respons JSON: label, confidence, probabilities, color_analysis
 [Frontend] halaman hasil
   • 200 → tampilkan kelas + confidence
   • "bukan_tomat" → badge Bukan Tomat (bukan hasil kematangan)
-  • 422 → pesan penolakan (tanpa fallback heuristik)
-  • backend mati → fallback heuristik browser + banner "Bukan Output AI"
+  • 422 → pesan penolakan + saran perbaikan (tanpa fallback otomatis)
+  • backend mati → tombol "Analisis warna lokal" (opt-in) + banner "Bukan Output AI"
 ```
 
 **Mode input AI.** Default `original` karena MobileNetV2 dilatih pada citra
@@ -93,13 +93,13 @@ satu tomat.
 ---
 ## 🛠 Teknologi & Environment
 
-- **Python**: 3.13 (venv `backend/.venv`)
-- **TensorFlow**: 2.21.0 (terpasang & terverifikasi — `pytest` 54 passed)
-- **Keras**: 3 (native TF 2.21 format `.keras`)
+- **Python**: 3.12 (venv `backend/.venv`)
+- **TensorFlow**: 2.18.0 (terpasang & terverifikasi — `pytest` 69 passed)
+- **Keras**: 3 (format native `.keras`)
 - **FastAPI**: Backend API
 - **Next.js**: Frontend framework
 
-**Catatan:** Library ML (`requirements-ml.txt`) memakai `tensorflow==2.21.0` yang kompatibel dengan Python 3.10–3.13. Training ulang bisa lewat `training_colab.ipynb` (Colab) atau `app/services/model/training.py` — keduanya menghasilkan `backend/models/mobilenetv2_tomat.keras`.
+**Catatan:** Library ML (`requirements-ml.txt`) memakai `tensorflow==2.18.0` (wheel tersedia untuk Python 3.10–3.12). Training ulang bisa lewat `training_colab.ipynb` (Colab) atau `app/services/model/training.py` — keduanya menghasilkan `backend/models/mobilenetv2_tomat.keras`.
 
 ---
 
@@ -110,5 +110,31 @@ satu tomat.
   `training.py` selesai, atau regenerasi manual tanpa training ulang:
   `python -m scripts.export_metrics`
 - **[`DEPLOY.md`](DEPLOY.md)** — panduan deploy langkah demi langkah (backend
-  FastAPI + frontend Next.js), checklist verifikasi, dan apa yang perlu/tidak
-  perlu ikut ke server. Training **tidak** dijalankan saat deploy.
+  FastAPI + frontend Next.js, termasuk Docker Compose), checklist verifikasi,
+  dan apa yang perlu/tidak perlu ikut ke server. Training **tidak** dijalankan
+  saat deploy.
+
+### Endpoint API
+
+| Endpoint | Fungsi |
+| --- | --- |
+| `GET /api/v1/health` | Status server, `model_loaded`, uptime, mode input |
+| `POST /api/v1/predict` | Klasifikasi foto; mengembalikan `label`, `confidence`, `probabilities`, `color_analysis`, `shape_metrics`, dan visual segmen (`segmentation`) |
+| `GET /api/v1/model/info` | Akurasi, precision/recall/F1 per kelas, dan confusion matrix dari `models/metrics.json` |
+
+### Menjalankan test
+
+```bash
+# Backend (butuh requirements.txt; test ML di-skip bila TensorFlow tidak ada)
+cd backend && python -m pytest -q
+
+# Frontend (Vitest + Testing Library)
+cd frontend && npm test
+```
+
+### Menjalankan seluruh stack dengan Docker
+
+```bash
+docker compose up --build
+# frontend http://localhost:3000 · backend http://localhost:8000
+```

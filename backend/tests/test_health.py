@@ -79,4 +79,6 @@ def test_predict_menolak_gambar_bukan_tomat(monkeypatch) -> None:
     )
 
     assert response.status_code == 422
-    assert "tomat" in response.json()["detail"].lower()
+    detail = response.json()["detail"]
+    assert "tomat" in detail["message"].lower()
+    assert isinstance(detail["hints"], list)

@@ -65,7 +65,9 @@ def predict(file: UploadFile = File(...)) -> PredictionResponse:
     except NotATomatoError as exc:
         # 422: request valid secara format, tetapi isinya bukan satu tomat
         # yang layak diprediksi (guard bentuk + keyakinan model).
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # Detail dikirim terstruktur: kode mesin, pesan, metrik yang
+        # dilanggar, dan saran perbaikan untuk ditampilkan frontend.
+        raise HTTPException(status_code=422, detail=exc.to_detail()) from exc
     except ModelNotReadyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ImportError as exc:

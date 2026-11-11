@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import Footer from "@/components/Footer";
+import MotionProvider from "@/components/MotionProvider";
 import Navbar from "@/components/Navbar";
+import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,13 +17,40 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const description =
+  "Klasifikasi tingkat kematangan tomat menggunakan pengolahan citra dan MobileNetV2.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "TomatoAI",
     template: "%s | TomatoAI",
   },
-  description:
-    "Klasifikasi tingkat kematangan tomat menggunakan pengolahan citra dan MobileNetV2.",
+  description,
+  applicationName: "TomatoAI",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "TomatoAI",
+    title: "TomatoAI — Klasifikasi Tingkat Kematangan Tomat",
+    description,
+    images: [{ url: "/logo-tomatoai.png", width: 512, height: 512 }],
+  },
+  twitter: {
+    card: "summary",
+    title: "TomatoAI — Klasifikasi Tingkat Kematangan Tomat",
+    description,
+    images: ["/logo-tomatoai.png"],
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3F7D58",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -30,9 +59,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-neutral-50 text-neutral-900">
+      <body className="flex min-h-full flex-col bg-brand-bg text-brand-text">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main id="konten-utama" className="flex-1 scroll-mt-16">
+          <MotionProvider>
+            <PageTransition>{children}</PageTransition>
+          </MotionProvider>
+        </main>
         <Footer />
       </body>
     </html>

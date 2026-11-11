@@ -1,6 +1,6 @@
-﻿# 🚀 Panduan Deploy TomatoAI
+# 🚀 Panduan Deploy TomatoAI
 
-Panduan ini sudah diverifikasi di Windows (Python 3.13 + Node). Prinsipnya:
+Panduan ini sudah diverifikasi di Linux/Windows (Python 3.12 + Node 22). Prinsipnya:
 **training TIDAK dijalankan saat deploy** — cukup bawa file model + kode inferensi.
 
 ## Yang dibutuhkan server
@@ -36,10 +36,21 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 **Cek sehat:** `GET /api/v1/health` harus `"model_loaded": true`.
 
+Endpoint lain yang dipakai frontend:
+
+| Endpoint | Kegunaan |
+| --- | --- |
+| `GET /api/v1/health` | Status model, uptime, mode input |
+| `POST /api/v1/predict` | Klasifikasi + visual segmentasi + metrik bentuk |
+| `GET /api/v1/model/info` | Akurasi/F1/confusion matrix dari `models/metrics.json` |
+
+> `models/metrics.json` wajib ikut bila halaman **/performa** ingin menampilkan
+> angka; tanpa file itu endpoint membalas 503 (halaman menampilkan pesan, bukan crash).
+
 | `model_loaded` | Artinya                                                                     |
 | ---------------- | --------------------------------------------------------------------------- |
 | `true`         | AI siap — `/predict` akan memakai MobileNetV2                            |
-| `false`        | TF/bobot tidak ada → `/predict` balas 503 → frontend jatuh ke heuristik |
+| `false`        | TF/bobot tidak ada → `/predict` balas 503 → frontend menawarkan analisis warna lokal (opt-in) |
 
 ## 2. Deploy backend gratis via Docker (Hugging Face Spaces)
 
@@ -59,6 +70,20 @@ dan port **7860** sesuai default HF Spaces.
 Catatan free tier: Space **tidur setelah ±48 jam idle**, request pertama bisa
 lambat (cold start) — timeout frontend sudah dinaikkan ke 90 detik.
 
+### 2.1 Alternatif: seluruh stack lewat Docker Compose
+
+Dari root repo:
+
+```bash
+docker compose up --build
+```
+
+- Backend: `http://localhost:8000` (image `backend/Dockerfile`, `requirements-prod.txt`)
+- Frontend: `http://localhost:3000` (image `frontend/Dockerfile`, Next.js standalone)
+
+`NEXT_PUBLIC_API_BASE_URL` di-embed saat build lewat build arg di
+`docker-compose.yml`. Untuk domain lain, ubah argumen itu lalu build ulang.
+
 ## 3. Frontend (Next.js)
 
 ```bash
@@ -66,8 +91,13 @@ cd frontend
 cp .env.example .env.local         # isi NEXT_PUBLIC_API_BASE_URL = URL backend
 npm ci
 npm run build
-npm start                          # port 3000
+npm start                          # port 3000 (cek lokal)
 ```
+
+`next.config.ts` memakai `output: "standalone"` agar image Docker kecil;
+`npm start` tetap bekerja untuk pengecekan lokal (Next hanya mengeluarkan
+peringatan). Di dalam container, entry point-nya `node server.js` dari
+`.next/standalone` — sudah diatur `frontend/Dockerfile`.
 
 `.env.local` production contohnya:
 
@@ -83,11 +113,15 @@ Backend harus mengizinkan origin frontend lewat `CORS_ORIGINS` (pisah koma).
 curl https://API-DOMAIN/api/v1/health          # → model_loaded: true
 curl -F "file=@foto_tomat.jpg" https://API-DOMAIN/api/v1/predict
                                               # → label + confidence + color_analysis
+                                              #   + shape_metrics + segmentation (mask/overlay)
+curl https://API-DOMAIN/api/v1/model/info      # → accuracy, F1, confusion matrix
 ```
 
 Di UI: unggah foto → judul kartu probabilitas harus **"Distribusi Keyakinan
-MobileNetV2"**. Kalau muncul banner kuning **"Hasil Heuristik Warna — Bukan
-Output AI"**, berarti backend/TF belum terjangkau — cek poin di atas.
+MobileNetV2"** dan panel **Pengolahan Citra** menampilkan mask/overlay. Bila
+muncul banner kuning **"Hasil Heuristik Warna — Bukan Output AI"**, berarti Anda
+menekan tombol analisis lokal karena backend/TF tidak terjangkau — cek poin di
+atas. Fallback itu **tidak pernah** berjalan otomatis.
 
 Guard "khusus tomat" aktif sebagai jaring pengaman kedua: bila model memilih
 kelas `bukan_tomat` (jeruk, apel, objek lain), API membalas **200** dengan
@@ -191,11 +225,11 @@ jobs:
 ## 7. Checklist ringkas
 
 - [ ] Lokal: `pip install -r requirements.txt && pip install -r requirements-ml.txt`
-- [ ] Docker: build `backend/Dockerfile` (pakai `requirements-prod.txt`, port 7860)
+- [ ] Docker: build `backend/Dockerfile` (pakai `requirements-prod.txt`, port 7860) atau `docker compose up --build`
 - [ ] `GET /api/v1/health` → `model_loaded: true`
 - [ ] `CORS_ORIGINS` mencakup origin frontend (domain Vercel)
 - [ ] `NEXT_PUBLIC_API_BASE_URL` menunjuk ke backend yang benar
-- [ ] Upload foto uji → muncul "MobileNetV2", bukan banner heuristik
+- [ ] Upload foto uji → muncul "MobileNetV2" + panel segmentasi, bukan banner heuristik
 - [ ] Foto jeruk → label `bukan_tomat`, bukan `setengah_matang`
 - [ ] Cold start HF Space terlewati (< 90 detik) atau Space di-warm-up
 - [ ] `metrics.json` ikut ter-deploy (opsional, untuk dokumentasi)

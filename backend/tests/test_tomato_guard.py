@@ -32,7 +32,49 @@ def test_metrik_lingkaran_terhitung_benar() -> None:
     assert m["circularity"] > 0.8
     assert 0.7 <= m["fill_ratio"] <= 0.85
     assert m["solidity"] > 0.95
-    assert 0.03 < m["area_ratio"] < 0.85
+    assert 0.03 < m["area_ratio"] < 0.98
+
+
+def test_objek_memenuhi_frame_lolos() -> None:
+    # Regresi: foto close-up yang hampir memenuhi frame pernah ditolak
+    # ("Objek terlalu memenuhi frame") meski jelas satu tomat.
+    size = 224
+    mask = np.zeros((size, size), dtype=np.uint8)
+    cv2.rectangle(mask, (5, 5), (219, 219), 255, -1)
+    ensure_tomato(mask, PROBS_TOMAT)
+
+
+def test_bentuk_padat_tidak_sempurna_lolos() -> None:
+    # Mask tomat nyata sering tidak bulat sempurna (tangkai / dua tomat
+    # berdekatan). Bentuk padat berlekuk ringan harus tetap lolos.
+    size = 224
+    mask = np.zeros((size, size), dtype=np.uint8)
+    pts = np.array(
+        [[40, 110], [80, 60], [130, 55], [175, 95], [185, 150], [140, 190], [85, 180], [45, 150]],
+        dtype=np.int32,
+    )
+    cv2.fillPoly(mask, [pts], 255)
+    ensure_tomato(mask, PROBS_TOMAT)
+
+
+def test_bentuk_tidak_padat_ditolak() -> None:
+    # Bintang: berlekuk, tidak padat, area kecil — tetap harus ditolak.
+    size = 224
+    mask = np.zeros((size, size), dtype=np.uint8)
+    c = (112, 112)
+    pts = np.array(
+        [
+            [
+                int(c[0] + (60 if i % 2 == 0 else 25) * np.cos(np.pi * i / 5)),
+                int(c[1] + (60 if i % 2 == 0 else 25) * np.sin(np.pi * i / 5)),
+            ]
+            for i in range(10)
+        ],
+        dtype=np.int32,
+    )
+    cv2.fillPoly(mask, [pts], 255)
+    with pytest.raises(NotATomatoError):
+        ensure_tomato(mask, PROBS_TOMAT)
 
 
 def test_mask_kosong_ditolak() -> None:

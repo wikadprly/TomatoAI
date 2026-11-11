@@ -4,29 +4,118 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  /* Warna aksi/brand. Dipakai untuk CTA, tautan aktif, dan fokus. */
   --color-brand-primary: #3F7D58;
   --color-brand-primary-hover: #326446;
   --color-brand-red: #E85D4A;
   --color-brand-yellow: #F2C94C;
   --color-brand-bg: #F8FAF7;
   --color-brand-text: #26332B;
+  --color-brand-border: #E5E9E3;
 
+  /* Warna semantik per kelas kematangan. */
   --color-mentah: #6FA665;
+  --color-mentah-text: #3F7D58;
   --color-mentah-bg: #F0F7EE;
   --color-mentah-border: #D1E7CB;
 
   --color-setengah: #E8BE4C;
+  --color-setengah-text: #B88710;
   --color-setengah-bg: #FEF9EB;
   --color-setengah-border: #FCE8B0;
 
   --color-matang: #CB5B5B;
+  --color-matang-text: #CB5B5B;
   --color-matang-bg: #FDF2F2;
   --color-matang-border: #F8D2D2;
 }
 
 body {
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #F8FAF7;
-  color: #26332B;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text);
   min-height: 100vh;
+}
+
+/* Satu indikator fokus untuk seluruh aplikasi, termasuk tombol ikon. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Hormati preferensi pengguna yang meminta animasi minimal. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Garis pemindai saat backend sedang menganalisis foto. */
+@keyframes tomatoai-scanline {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(320%);
+    opacity: 0;
+  }
+}
+
+.animate-scanline {
+  animation: tomatoai-scanline 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* Kilau bergerak untuk skeleton loading. */
+@keyframes tomatoai-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: tomatoai-shimmer 1.6s infinite;
+}
+
+/* Denyut lembut untuk indikator status "sedang memproses". */
+@keyframes tomatoai-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.animate-breathe {
+  animation: tomatoai-breathe 2.4s ease-in-out infinite;
 }

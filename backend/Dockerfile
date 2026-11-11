@@ -1,6 +1,8 @@
 # Dockerfile backend TomatoAI — target: Hugging Face Spaces (SDK: Docker).
 # Space Docker wajib mendengarkan port 7860 (default HF Spaces).
-FROM python:3.13-slim
+# TensorFlow 2.18 menyediakan wheel untuk Python 3.12; versi 3.13 belum
+# didukung. Samakan dengan environment yang sudah diverifikasi lokal.
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

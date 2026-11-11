@@ -1,5 +1,5 @@
-import React from "react";
 import type { MaturityLevel } from "@/lib/types";
+import { getClassMeta } from "@/lib/maturity";
 
 interface MaturityBadgeProps {
   level: string | MaturityLevel;
@@ -7,84 +7,38 @@ interface MaturityBadgeProps {
   className?: string;
 }
 
-const levelConfigs: Record<
-  string,
-  {
-    name: string;
-    bgClass: string;
-    textClass: string;
-    borderClass: string;
-    icon: string;
-    description: string;
-  }
-> = {
-  mentah: {
-    name: "Mentah",
-    bgClass: "bg-[#F0F7EE]",
-    textClass: "text-[#3F7D58]",
-    borderClass: "border-[#D1E7CB]",
-    icon: "🌱",
-    description: "Kandungan klorofil dominan tinggi, tekstur padat/keras, belum siap dikonsumsi langsung.",
-  },
-  setengah_matang: {
-    name: "Setengah Matang",
-    bgClass: "bg-[#FEF9EB]",
-    textClass: "text-[#B88710]",
-    borderClass: "border-[#FCE8B0]",
-    icon: "⚡",
-    description: "Transisi warna hijau ke kemerahan/oranye, cocok untuk pengiriman jarak jauh atau penyimpanan.",
-  },
-  matang: {
-    name: "Matang",
-    bgClass: "bg-[#FDF2F2]",
-    textClass: "text-[#CB5B5B]",
-    borderClass: "border-[#F8D2D2]",
-    icon: "🍅",
-    description: "Likopen merah berkembang penuh, rasa manis asam seimbang, siap dikonsumsi atau diolah.",
-  },
-  bukan_tomat: {
-    name: "Bukan Tomat",
-    bgClass: "bg-neutral-100",
-    textClass: "text-neutral-700",
-    borderClass: "border-neutral-300",
-    icon: "⊘",
-    description:
-      "Objek terdeteksi bukan tomat. Foto mungkin berisi buah lain (jeruk, apel), objek, atau latar belakang — coba unggah foto satu tomat.",
-  },
-};
+const sizeClasses = {
+  sm: "px-2 py-0.5 text-xs gap-1.5",
+  md: "px-3 py-1 text-sm gap-2",
+  lg: "px-4 py-1.5 text-base font-semibold gap-2.5",
+} as const;
+
+const dotClasses = {
+  sm: "h-1.5 w-1.5",
+  md: "h-2 w-2",
+  lg: "h-2.5 w-2.5",
+} as const;
 
 export default function MaturityBadge({
   level,
   size = "md",
   className = "",
 }: MaturityBadgeProps) {
-  const normalizedKey = (level || "").toLowerCase().replace(/\s+/g, "_");
-  const config = levelConfigs[normalizedKey] || {
-    name: level || "Tidak Diketahui",
-    bgClass: "bg-neutral-100",
-    textClass: "text-neutral-700",
-    borderClass: "border-neutral-200",
-    icon: "❓",
-    description: "",
-  };
-
-  const sizeClasses = {
-    sm: "px-2 py-0.5 text-xs gap-1.5",
-    md: "px-3 py-1 text-sm gap-2",
-    lg: "px-4 py-1.5 text-base font-semibold gap-2.5",
-  };
+  const meta = getClassMeta(level);
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border font-medium ${config.bgClass} ${config.textClass} ${config.borderClass} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center rounded-full border font-medium ${meta.badgeBgClass} ${meta.textClass} ${meta.badgeBorderClass} ${sizeClasses[size]} ${className}`}
     >
-      <span>{config.icon}</span>
-      <span>{config.name}</span>
+      <span
+        aria-hidden="true"
+        className={`rounded-full ${meta.barClass} ${dotClasses[size]}`}
+      />
+      <span>{meta.name}</span>
     </span>
   );
 }
 
 export function getMaturityDescription(level: string): string {
-  const normalizedKey = (level || "").toLowerCase().replace(/\s+/g, "_");
-  return levelConfigs[normalizedKey]?.description || "";
+  return getClassMeta(level).description;
 }

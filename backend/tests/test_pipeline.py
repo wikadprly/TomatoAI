@@ -48,6 +48,46 @@ def test_classify_tomato_mengisi_color_analysis(monkeypatch):
     assert hasil.color_analysis.object_ratio > 0
 
 
+def test_classify_tomato_menyertakan_artefak_segmentasi(monkeypatch):
+    """Frontend butuh visual mask + citra input model untuk ditampilkan."""
+    monkeypatch.setattr(pipeline, "model_is_ready", lambda: True)
+
+    def predict_tiruan(image, color_analysis=None, mask=None):
+        return PredictionResponse(
+            label="matang",
+            confidence=0.9,
+            probabilities={"matang": 0.9},
+            color_analysis=color_analysis,
+        )
+
+    monkeypatch.setattr(pipeline, "predict_label", predict_tiruan)
+
+    hasil = pipeline.classify_tomato(_bytes_gambar_lingkaran_merah())
+
+    assert hasil.segmentation is not None
+    assert hasil.segmentation.overlay_jpeg.startswith("data:image/jpeg;base64,")
+    assert hasil.shape_metrics is not None
+    assert hasil.shape_metrics.circularity > 0.5
+
+
+def test_artefak_segmentasi_bisa_dimatikan(monkeypatch):
+    monkeypatch.setattr(pipeline, "model_is_ready", lambda: True)
+    monkeypatch.setattr(pipeline.settings, "SEGMENTATION_IMAGES_ENABLED", False)
+    monkeypatch.setattr(
+        pipeline,
+        "predict_label",
+        lambda image, color_analysis=None, mask=None: PredictionResponse(
+            label="mentah",
+            confidence=0.8,
+            probabilities={"mentah": 0.8},
+            color_analysis=color_analysis,
+        ),
+    )
+
+    hasil = pipeline.classify_tomato(_bytes_gambar_lingkaran_merah())
+    assert hasil.segmentation is None
+
+
 def test_classify_tomato_menolak_saat_model_belum_siap(monkeypatch):
     monkeypatch.setattr(pipeline, "model_is_ready", lambda: False)
 
